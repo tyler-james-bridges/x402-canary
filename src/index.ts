@@ -9,17 +9,18 @@ async function runChecks(): Promise<void> {
   console.log(`[${new Date().toISOString()}] Running checks on ${endpoints.length} endpoints...`);
 
   const results = await Promise.allSettled(
-    endpoints.map((e) => checkEndpoint(e.url))
+    endpoints.map((e) => checkEndpoint(e.url, e.method))
   );
 
   for (const result of results) {
     if (result.status === "fulfilled") {
       const r = result.value;
       recordCheck(r);
-      const indicator = r.isHealthy ? "UP" : "DOWN";
+      const indicator = r.isX402 ? "402" : r.isHealthy ? "UP" : "DOWN";
+      const priceStr = r.x402Details?.price ? ` — ${r.x402Details.price} on ${r.x402Details.network}` : "";
       console.log(
         `  [${indicator}] ${r.url} — ${r.responseTimeMs}ms` +
-          (r.error ? ` — ${r.error}` : ` — HTTP ${r.status}`)
+          (r.error ? ` — ${r.error}` : ` — HTTP ${r.status}${priceStr}`)
       );
     }
   }

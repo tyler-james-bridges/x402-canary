@@ -10,22 +10,9 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg: #000;
-      --fg: #fff;
-      --border: #fff;
-      --dim: #666;
-      --up: #fff;
-      --down: #fff;
-      --up-bg: #000;
-      --down-bg: #000;
-      --up-border: #fff;
-      --down-border: #f00;
-    }
-
     body {
-      background: var(--bg);
-      color: var(--fg);
+      background: #000;
+      color: #fff;
       font-family: "Geist Mono", "Courier New", monospace;
       font-size: 13px;
       line-height: 1.5;
@@ -33,7 +20,7 @@
     }
 
     header {
-      border-bottom: 2px solid var(--border);
+      border-bottom: 2px solid #fff;
       padding: 20px 24px;
       display: flex;
       justify-content: space-between;
@@ -50,37 +37,24 @@
     }
 
     header .meta {
-      color: var(--dim);
+      color: #666;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .summary-bar {
-      border-bottom: 2px solid var(--border);
+      border-bottom: 2px solid #fff;
       padding: 12px 24px;
       display: flex;
       gap: 32px;
       flex-wrap: wrap;
     }
 
-    .summary-bar .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .summary-bar .stat-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--dim);
-    }
-
-    .summary-bar .stat-value {
-      font-size: 18px;
-      font-weight: 700;
-    }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
+    .stat-value { font-size: 18px; font-weight: 700; }
+    .stat-value.x402-color { color: #0ff; }
 
     .endpoints {
       padding: 24px;
@@ -90,13 +64,13 @@
     }
 
     .card {
-      border: 2px solid var(--border);
+      border: 2px solid #fff;
       padding: 16px;
     }
 
-    .card.down {
-      border-color: var(--down-border);
-    }
+    .card.down { border-color: #f00; }
+    .card.x402 { border-color: #0ff; }
+    .card.down.x402 { border-color: #f00; } /* down takes priority */
 
     .card-header {
       display: flex;
@@ -114,103 +88,98 @@
       word-break: break-all;
     }
 
+    .badges {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
     .badge {
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       padding: 2px 6px;
-      border: 2px solid var(--fg);
+      border: 2px solid #fff;
       white-space: nowrap;
-      flex-shrink: 0;
     }
 
-    .badge.up { border-color: #fff; }
+    .badge.up { border-color: #fff; color: #fff; }
     .badge.down { border-color: #f00; color: #f00; }
-    .badge.unknown { border-color: var(--dim); color: var(--dim); }
+    .badge.unknown { border-color: #666; color: #666; }
+    .badge.x402-badge { border-color: #0ff; color: #0ff; }
 
     .card-desc {
-      color: var(--dim);
+      color: #666;
       font-size: 11px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
 
     .card-url {
       font-size: 10px;
-      color: var(--dim);
+      color: #666;
       margin-bottom: 14px;
       word-break: break-all;
     }
+
+    .x402-info {
+      border: 1px solid #0ff;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .x402-field { display: flex; flex-direction: column; gap: 1px; }
+    .x402-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #0ff; }
+    .x402-value { font-size: 11px; word-break: break-all; color: #fff; }
+    .x402-value.null { color: #666; font-style: italic; }
+    .x402-value.mismatch { color: #f80; }
+    .x402-value.highlight { color: #0f0; }
+    .x402-expected { color: #444; font-size: 8px; text-transform: none; letter-spacing: 0; }
+    .x402-price-field { grid-column: span 2; }
 
     .card-metrics {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
-      border-top: 1px solid var(--dim);
+      border-top: 1px solid #444;
       padding-top: 12px;
     }
 
-    .metric {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .metric-label {
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--dim);
-    }
-
-    .metric-value {
-      font-size: 13px;
-      font-weight: 500;
-    }
+    .metric { display: flex; flex-direction: column; gap: 2px; }
+    .metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
+    .metric-value { font-size: 13px; font-weight: 500; }
 
     .sparkline {
       display: flex;
       gap: 2px;
       margin-top: 12px;
-      border-top: 1px solid var(--dim);
+      border-top: 1px solid #444;
       padding-top: 12px;
       align-items: flex-end;
       height: 32px;
     }
 
-    .spark-bar {
-      flex: 1;
-      min-width: 4px;
-      background: #fff;
-    }
+    .spark-bar { flex: 1; min-width: 4px; background: #fff; }
+    .spark-bar.fail { background: #f00; }
+    .spark-bar.x402-bar { background: #0ff; }
 
-    .spark-bar.fail {
-      background: #f00;
-    }
-
-    .loading {
-      padding: 48px 24px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--dim);
-    }
-
-    .error-msg {
-      padding: 48px 24px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #f00;
-    }
+    .loading { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
+    .error-msg { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: #f00; }
 
     .refresh-info {
       padding: 12px 24px;
-      border-top: 2px solid var(--border);
+      border-top: 2px solid #fff;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--dim);
+      color: #666;
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
@@ -230,7 +199,7 @@
     <div class="meta">Agent Economy Health Monitor</div>
   </header>
 
-  <div class="summary-bar" id="summary-bar">
+  <div class="summary-bar">
     <div class="stat">
       <span class="stat-label">Endpoints</span>
       <span class="stat-value" id="stat-total">--</span>
@@ -247,6 +216,10 @@
       <span class="stat-label">Avg Uptime</span>
       <span class="stat-value" id="stat-uptime">--</span>
     </div>
+    <div class="stat">
+      <span class="stat-label">x402 Enabled</span>
+      <span class="stat-value x402-color" id="stat-x402">--</span>
+    </div>
   </div>
 
   <div id="content">
@@ -259,11 +232,8 @@
   </div>
 
   <script>
-    const API = '/api/health';
-    let refreshTimer;
-
     function fmt(ms) {
-      if (ms == null) return '--';
+      if (ms == null || ms === 0) return '--';
       if (ms < 1000) return ms + 'ms';
       return (ms / 1000).toFixed(1) + 's';
     }
@@ -283,27 +253,64 @@
       return ep.isHealthy ? 'UP' : 'DOWN';
     }
 
+    function statusLabel(ep) {
+      if (ep.lastStatus == null) return '';
+      return ` (${ep.lastStatus})`;
+    }
+
+    function renderX402Info(details, expectedPrice) {
+      if (!details) return '';
+      const field = (label, val, highlight) =>
+        `<div class="x402-field">
+          <div class="x402-label">${label}</div>
+          <div class="x402-value ${val ? (highlight ? 'highlight' : '') : 'null'}">${val || 'unknown'}</div>
+        </div>`;
+
+      const priceMatch = expectedPrice && details.price && details.price === expectedPrice;
+      const priceMismatch = expectedPrice && details.price && details.price !== expectedPrice
+        && expectedPrice !== 'free' && expectedPrice !== 'dynamic';
+      const priceLabel = expectedPrice
+        ? `Price <span class="x402-expected">(expected ${expectedPrice})</span>`
+        : 'Price';
+      const priceClass = priceMismatch ? 'mismatch' : '';
+
+      return `<div class="x402-info">
+        <div class="x402-field x402-price-field">
+          <div class="x402-label">${priceLabel}</div>
+          <div class="x402-value ${details.price ? priceClass : 'null'}">${details.price || 'unknown'}</div>
+        </div>
+        ${field('Network', details.network)}
+        ${field('Token', details.assetSymbol || details.asset?.slice(0, 10) + '...')}
+        ${field('Version', details.version != null ? `v${details.version}` : null)}
+      </div>`;
+    }
+
     function renderSparkline(checks) {
       if (!checks || checks.length === 0) return '';
       const maxTime = Math.max(...checks.map(c => c.responseTimeMs), 1);
       return checks.map(c => {
         const h = Math.max(4, Math.round((c.responseTimeMs / maxTime) * 28));
-        const cls = c.isHealthy ? '' : 'fail';
-        return `<div class="spark-bar ${cls}" style="height:${h}px" title="${c.isHealthy ? 'UP' : 'DOWN'} ${c.responseTimeMs}ms"></div>`;
+        const cls = !c.isHealthy ? 'fail' : c.isX402 ? 'x402-bar' : '';
+        return `<div class="spark-bar ${cls}" style="height:${h}px" title="${c.isHealthy ? (c.isX402 ? '402' : 'UP') : 'DOWN'} ${c.responseTimeMs}ms"></div>`;
       }).join('');
     }
 
     function renderCard(ep) {
       const bc = badgeClass(ep);
-      const statusCode = ep.lastStatus != null ? ` (${ep.lastStatus})` : '';
+      const cardClass = ['card', bc === 'down' ? 'down' : '', ep.isX402 ? 'x402' : ''].filter(Boolean).join(' ');
+
       return `
-        <div class="card ${bc === 'down' ? 'down' : ''}">
+        <div class="${cardClass}">
           <div class="card-header">
             <div class="card-name">${ep.name || ep.url}</div>
-            <div class="badge ${bc}">${badgeText(ep)}${statusCode}</div>
+            <div class="badges">
+              <div class="badge ${bc}">${badgeText(ep)}${statusLabel(ep)}</div>
+              ${ep.isX402 ? '<div class="badge x402-badge">X402</div>' : ''}
+            </div>
           </div>
           <div class="card-desc">${ep.description || ''}</div>
           <div class="card-url">${ep.url}</div>
+          ${ep.isX402 ? renderX402Info(ep.x402Details, ep.expectedPrice) : ''}
           <div class="card-metrics">
             <div class="metric">
               <div class="metric-label">Uptime</div>
@@ -323,15 +330,18 @@
       `;
     }
 
+    let refreshTimer;
+
     async function fetchAndRender() {
       try {
-        const res = await fetch(API);
+        const res = await fetch('/api/health');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const eps = data.endpoints;
 
         const up = eps.filter(e => e.isHealthy).length;
         const down = eps.filter(e => !e.isHealthy && e.lastChecked).length;
+        const x402Count = eps.filter(e => e.isX402).length;
         const avgUptime = eps.length > 0
           ? eps.reduce((s, e) => s + e.uptimePct, 0) / eps.length
           : 0;
@@ -340,6 +350,7 @@
         document.getElementById('stat-up').textContent = up;
         document.getElementById('stat-down').textContent = down;
         document.getElementById('stat-uptime').textContent = fmtPct(avgUptime);
+        document.getElementById('stat-x402').textContent = `${x402Count}/${eps.length}`;
 
         document.getElementById('content').innerHTML =
           `<div class="endpoints">${eps.map(renderCard).join('')}</div>`;

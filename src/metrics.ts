@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { CheckResult } from "./canary.js";
+import { CheckResult, X402Details } from "./canary.js";
 
 const DATA_FILE = path.join(process.cwd(), "data", "metrics.json");
 const MAX_HISTORY = 500;
@@ -14,6 +14,20 @@ export interface EndpointMetrics {
   lastChecked: string | null;
   lastStatus: number | null;
   isHealthy: boolean;
+  isX402: boolean;
+  x402Details?: X402Details;
+  expectedPrice?: string;
+}
+
+export interface X402Summary {
+  totalEndpoints: number;
+  x402Count: number;
+  endpoints: Array<{
+    url: string;
+    name?: string;
+    x402Details: X402Details;
+    lastChecked: string | null;
+  }>;
 }
 
 type MetricsStore = Record<string, CheckResult[]>;
@@ -65,6 +79,9 @@ export function getMetrics(url: string): EndpointMetrics {
 
   const last = checks[checks.length - 1] ?? null;
 
+  // Use the most recent x402 details seen for this endpoint
+  const lastX402Check = [...checks].reverse().find((c) => c.isX402);
+
   return {
     url,
     checks: checks.slice(-20),
@@ -74,9 +91,36 @@ export function getMetrics(url: string): EndpointMetrics {
     lastChecked: last?.timestamp ?? null,
     lastStatus: last?.status ?? null,
     isHealthy: last?.isHealthy ?? false,
+    isX402: last?.isX402 ?? false,
+    x402Details: lastX402Check?.x402Details,
   };
 }
 
 export function getAllMetrics(urls: string[]): EndpointMetrics[] {
   return urls.map(getMetrics);
+}
+
+export function getX402Summary(
+  urls: string[],
+  names: Record<string, string>
+): X402Summary {
+  const all = getAllMetrics(urls);
+  const x402 = all.filter((m) => m.isX402);
+
+  return {
+    totalEndpoints: all.length,
+    x402Count: x402.length,
+    endpoints: x402.map((m) => ({
+      url: m.url,
+      name: names[m.url],
+      x402Details: m.x402Details ?? {
+        price: null,
+        network: null,
+        token: null,
+        payTo: null,
+        version: null,
+      },
+      lastChecked: m.lastChecked,
+    })),
+  };
 }
