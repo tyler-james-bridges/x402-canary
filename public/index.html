@@ -146,7 +146,7 @@
 
     .card-metrics {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
       border-top: 1px solid #444;
       padding-top: 12px;
@@ -155,20 +155,6 @@
     .metric { display: flex; flex-direction: column; gap: 2px; }
     .metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
     .metric-value { font-size: 13px; font-weight: 500; }
-
-    .sparkline {
-      display: flex;
-      gap: 2px;
-      margin-top: 12px;
-      border-top: 1px solid #444;
-      padding-top: 12px;
-      align-items: flex-end;
-      height: 32px;
-    }
-
-    .spark-bar { flex: 1; min-width: 4px; background: #fff; }
-    .spark-bar.fail { background: #f00; }
-    .spark-bar.x402-bar { background: #0ff; }
 
     .loading { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
     .error-msg { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: #f00; }
@@ -213,10 +199,6 @@
       <span class="stat-value" id="stat-down">--</span>
     </div>
     <div class="stat">
-      <span class="stat-label">Avg Uptime</span>
-      <span class="stat-value" id="stat-uptime">--</span>
-    </div>
-    <div class="stat">
       <span class="stat-label">x402 Enabled</span>
       <span class="stat-value x402-color" id="stat-x402">--</span>
     </div>
@@ -236,11 +218,6 @@
       if (ms == null || ms === 0) return '--';
       if (ms < 1000) return ms + 'ms';
       return (ms / 1000).toFixed(1) + 's';
-    }
-
-    function fmtPct(n) {
-      if (n == null) return '--';
-      return n.toFixed(1) + '%';
     }
 
     function badgeClass(ep) {
@@ -297,16 +274,6 @@
       </div>`;
     }
 
-    function renderSparkline(checks) {
-      if (!checks || checks.length === 0) return '';
-      const maxTime = Math.max(...checks.map(c => c.responseTimeMs), 1);
-      return checks.map(c => {
-        const h = Math.max(4, Math.round((c.responseTimeMs / maxTime) * 28));
-        const cls = !c.isHealthy ? 'fail' : c.isX402 ? 'x402-bar' : '';
-        return `<div class="spark-bar ${cls}" style="height:${h}px" title="${c.isHealthy ? (c.isX402 ? '402' : 'UP') : 'DOWN'} ${c.responseTimeMs}ms"></div>`;
-      }).join('');
-    }
-
     function renderCard(ep) {
       const bc = badgeClass(ep);
       const cardClass = ['card', bc === 'down' ? 'down' : '', ep.isX402 ? 'x402' : ''].filter(Boolean).join(' ');
@@ -325,19 +292,14 @@
           ${ep.isX402 ? renderX402Info(ep.x402Details, ep.expectedPrice) : ''}
           <div class="card-metrics">
             <div class="metric">
-              <div class="metric-label">Uptime</div>
-              <div class="metric-value">${fmtPct(ep.uptimePct)}</div>
+              <div class="metric-label">Response</div>
+              <div class="metric-value">${fmt(ep.responseTimeMs)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Avg</div>
-              <div class="metric-value">${fmt(ep.avgResponseTimeMs)}</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">P95</div>
-              <div class="metric-value">${fmt(ep.p95ResponseTimeMs)}</div>
+              <div class="metric-label">Status</div>
+              <div class="metric-value">${ep.status || 'ERR'}</div>
             </div>
           </div>
-          <div class="sparkline">${renderSparkline(ep.checks)}</div>
         </div>
       `;
     }
@@ -351,23 +313,17 @@
         const data = await res.json();
         const eps = data.endpoints;
 
-        const up = eps.filter(e => e.isHealthy).length;
-        const down = eps.filter(e => !e.isHealthy && e.lastChecked).length;
-        const x402Count = eps.filter(e => e.isX402).length;
-        const avgUptime = eps.length > 0
-          ? eps.reduce((s, e) => s + e.uptimePct, 0) / eps.length
-          : 0;
+        const { total, online: up, degraded: down, x402Enabled: x402Count } = data.summary;
 
-        document.getElementById('stat-total').textContent = eps.length;
+        document.getElementById('stat-total').textContent = total;
         document.getElementById('stat-up').textContent = up;
         document.getElementById('stat-down').textContent = down;
-        document.getElementById('stat-uptime').textContent = fmtPct(avgUptime);
-        document.getElementById('stat-x402').textContent = `${x402Count}/${eps.length}`;
+        document.getElementById('stat-x402').textContent = `${x402Count}/${total}`;
 
         document.getElementById('content').innerHTML =
           `<div class="endpoints">${eps.map(renderCard).join('')}</div>`;
 
-        const ts = new Date(data.generatedAt);
+        const ts = new Date(data.timestamp);
         document.getElementById('last-updated').textContent =
           'Last updated: ' + ts.toLocaleTimeString();
       } catch (err) {
