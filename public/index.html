@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X402 CANARY</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #000;
+      --fg: #fff;
+      --border: #fff;
+      --dim: #666;
+      --up: #fff;
+      --down: #fff;
+      --up-bg: #000;
+      --down-bg: #000;
+      --up-border: #fff;
+      --down-border: #f00;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Geist Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 2px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    header .meta {
+      color: var(--dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .summary-bar {
+      border-bottom: 2px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .summary-bar .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .summary-bar .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+
+    .summary-bar .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .endpoints {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 2px solid var(--border);
+      padding: 16px;
+    }
+
+    .card.down {
+      border-color: var(--down-border);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+
+    .card-name {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      word-break: break-all;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 2px solid var(--fg);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge.up { border-color: #fff; }
+    .badge.down { border-color: #f00; color: #f00; }
+    .badge.unknown { border-color: var(--dim); color: var(--dim); }
+
+    .card-desc {
+      color: var(--dim);
+      font-size: 11px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .card-url {
+      font-size: 10px;
+      color: var(--dim);
+      margin-bottom: 14px;
+      word-break: break-all;
+    }
+
+    .card-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      border-top: 1px solid var(--dim);
+      padding-top: 12px;
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+
+    .metric-value {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .sparkline {
+      display: flex;
+      gap: 2px;
+      margin-top: 12px;
+      border-top: 1px solid var(--dim);
+      padding-top: 12px;
+      align-items: flex-end;
+      height: 32px;
+    }
+
+    .spark-bar {
+      flex: 1;
+      min-width: 4px;
+      background: #fff;
+    }
+
+    .spark-bar.fail {
+      background: #f00;
+    }
+
+    .loading {
+      padding: 48px 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+
+    .error-msg {
+      padding: 48px 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #f00;
+    }
+
+    .refresh-info {
+      padding: 12px 24px;
+      border-top: 2px solid var(--border);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--dim);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      header { padding: 16px; }
+      .endpoints { padding: 16px; grid-template-columns: 1fr; }
+      .summary-bar { padding: 12px 16px; gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>X402 Canary</h1>
+    <div class="meta">Agent Economy Health Monitor</div>
+  </header>
+
+  <div class="summary-bar" id="summary-bar">
+    <div class="stat">
+      <span class="stat-label">Endpoints</span>
+      <span class="stat-value" id="stat-total">--</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Online</span>
+      <span class="stat-value" id="stat-up">--</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Degraded</span>
+      <span class="stat-value" id="stat-down">--</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Avg Uptime</span>
+      <span class="stat-value" id="stat-uptime">--</span>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="loading">Loading...</div>
+  </div>
+
+  <div class="refresh-info">
+    <span>Auto-refresh every 30s</span>
+    <span id="last-updated">--</span>
+  </div>
+
+  <script>
+    const API = '/api/health';
+    let refreshTimer;
+
+    function fmt(ms) {
+      if (ms == null) return '--';
+      if (ms < 1000) return ms + 'ms';
+      return (ms / 1000).toFixed(1) + 's';
+    }
+
+    function fmtPct(n) {
+      if (n == null) return '--';
+      return n.toFixed(1) + '%';
+    }
+
+    function badgeClass(ep) {
+      if (ep.lastChecked == null) return 'unknown';
+      return ep.isHealthy ? 'up' : 'down';
+    }
+
+    function badgeText(ep) {
+      if (ep.lastChecked == null) return 'PENDING';
+      return ep.isHealthy ? 'UP' : 'DOWN';
+    }
+
+    function renderSparkline(checks) {
+      if (!checks || checks.length === 0) return '';
+      const maxTime = Math.max(...checks.map(c => c.responseTimeMs), 1);
+      return checks.map(c => {
+        const h = Math.max(4, Math.round((c.responseTimeMs / maxTime) * 28));
+        const cls = c.isHealthy ? '' : 'fail';
+        return `<div class="spark-bar ${cls}" style="height:${h}px" title="${c.isHealthy ? 'UP' : 'DOWN'} ${c.responseTimeMs}ms"></div>`;
+      }).join('');
+    }
+
+    function renderCard(ep) {
+      const bc = badgeClass(ep);
+      const statusCode = ep.lastStatus != null ? ` (${ep.lastStatus})` : '';
+      return `
+        <div class="card ${bc === 'down' ? 'down' : ''}">
+          <div class="card-header">
+            <div class="card-name">${ep.name || ep.url}</div>
+            <div class="badge ${bc}">${badgeText(ep)}${statusCode}</div>
+          </div>
+          <div class="card-desc">${ep.description || ''}</div>
+          <div class="card-url">${ep.url}</div>
+          <div class="card-metrics">
+            <div class="metric">
+              <div class="metric-label">Uptime</div>
+              <div class="metric-value">${fmtPct(ep.uptimePct)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Avg</div>
+              <div class="metric-value">${fmt(ep.avgResponseTimeMs)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">P95</div>
+              <div class="metric-value">${fmt(ep.p95ResponseTimeMs)}</div>
+            </div>
+          </div>
+          <div class="sparkline">${renderSparkline(ep.checks)}</div>
+        </div>
+      `;
+    }
+
+    async function fetchAndRender() {
+      try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const eps = data.endpoints;
+
+        const up = eps.filter(e => e.isHealthy).length;
+        const down = eps.filter(e => !e.isHealthy && e.lastChecked).length;
+        const avgUptime = eps.length > 0
+          ? eps.reduce((s, e) => s + e.uptimePct, 0) / eps.length
+          : 0;
+
+        document.getElementById('stat-total').textContent = eps.length;
+        document.getElementById('stat-up').textContent = up;
+        document.getElementById('stat-down').textContent = down;
+        document.getElementById('stat-uptime').textContent = fmtPct(avgUptime);
+
+        document.getElementById('content').innerHTML =
+          `<div class="endpoints">${eps.map(renderCard).join('')}</div>`;
+
+        const ts = new Date(data.generatedAt);
+        document.getElementById('last-updated').textContent =
+          'Last updated: ' + ts.toLocaleTimeString();
+      } catch (err) {
+        document.getElementById('content').innerHTML =
+          `<div class="error-msg">Failed to load: ${err.message}</div>`;
+      }
+    }
+
+    function scheduleRefresh() {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        fetchAndRender().then(scheduleRefresh);
+      }, 30_000);
+    }
+
+    fetchAndRender().then(scheduleRefresh);
+  </script>
+</body>
+</html>

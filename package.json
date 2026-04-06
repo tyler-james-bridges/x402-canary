@@ -1,0 +1,19 @@
+{
+  "name": "x402-canary",
+  "version": "1.0.0",
+  "description": "Canary network monitor for x402 agent economy endpoints",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "npx tsx src/index.ts",
+    "start": "npx tsx src/index.ts"
+  },
+  "keywords": [],
+  "author": "tjb",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
