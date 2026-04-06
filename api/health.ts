@@ -16,18 +16,19 @@ function normalizeX402(raw: any): { price: string; network: string; token: strin
   const accepts = raw.accepts;
   if (!Array.isArray(accepts) || accepts.length === 0) return null;
   const accept = accepts[0];
+  const token = accept.extra?.name || "USDC";
   let price = "";
   const maxAmount = accept.maxAmountRequired;
   if (maxAmount != null) {
     const n = Number(maxAmount);
     if (!isNaN(n)) {
-      price = "$" + (n / 1_000_000).toFixed(6).replace(/0+$/, "").replace(/\.$/, "") + " USDC";
+      price = "$" + (n / 1_000_000).toFixed(6).replace(/0+$/, "").replace(/\.$/, "") + " " + token;
     }
   }
   return {
     price,
     network: String(accept.network || ""),
-    token: "USDC",
+    token,
     version: accept.scheme || "x402",
   };
 }

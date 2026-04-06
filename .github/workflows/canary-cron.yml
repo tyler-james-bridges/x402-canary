@@ -1,0 +1,28 @@
+name: x402 Canary Check
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run health check
+        run: |
+          curl -s https://canary.0x402.sh/api/health > health.json
+          cat health.json | jq .
+      - name: Check for degraded endpoints
+        run: |
+          DEGRADED=$(cat health.json | jq '[.endpoints[] | select(.isHealthy == false)] | length')
+          echo "Degraded: $DEGRADED"
+          if [ "$DEGRADED" -gt "0" ]; then
+            echo "::warning::$DEGRADED endpoint(s) degraded"
+            cat health.json | jq '[.endpoints[] | select(.isHealthy == false) | {name, status, url}]'
+          fi
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-check-${{ github.run_number }}
+          path: health.json
+          retention-days: 30
