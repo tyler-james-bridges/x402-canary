@@ -11,7 +11,7 @@ jobs:
       - name: Run health check
         run: |
           curl -s https://canary.0x402.sh/api/health > health.json
-          cat health.json | jq .
+          cat health.json | jq .summary
       - name: Check for degraded endpoints
         run: |
           DEGRADED=$(cat health.json | jq '[.endpoints[] | select(.isHealthy == false)] | length')
