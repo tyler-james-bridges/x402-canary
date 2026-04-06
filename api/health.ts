@@ -190,6 +190,7 @@ async function checkEndpoint(url: string, method = "GET"): Promise<CheckResult> 
 }
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
+  try {
   const results = await Promise.all(
     endpoints.map(async (ep) => {
       const check = await checkEndpoint(ep.url, ep.method);
@@ -198,20 +199,21 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         name: ep.name,
         description: ep.description,
         expectedPrice: ep.expectedPrice,
-        checks: [check],
-        uptimePct: check.isHealthy ? 100 : 0,
-        avgResponseTimeMs: check.responseTimeMs,
-        p95ResponseTimeMs: check.responseTimeMs,
         lastChecked: check.timestamp,
         lastStatus: check.status,
+        responseTimeMs: check.responseTimeMs,
         isHealthy: check.isHealthy,
         isX402: check.isX402,
-        x402Details: check.x402Details,
-        error: check.error,
+        x402Details: check.x402Details ?? null,
+        error: check.error ?? null,
       };
     })
   );
 
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cache-Control", "no-store");
   res.json({ endpoints: results, generatedAt: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined });
+  }
 }
