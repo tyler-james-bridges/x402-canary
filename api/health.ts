@@ -1,13 +1,34 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const ENDPOINTS = [
-  { name: "x402scan Merchants", url: "https://www.x402scan.com/api/x402/merchants", method: "GET" },
-  { name: "x402scan Resources", url: "https://www.x402scan.com/api/x402/resources", method: "GET" },
-  { name: "StableEnrich Exa Search", url: "https://stableenrich.dev/api/exa/search", method: "POST" },
-  { name: "StableEnrich Apollo People", url: "https://stableenrich.dev/api/apollo/people-search", method: "POST" },
-  { name: "AgentCash", url: "https://agentcash.dev/api/send", method: "POST" },
-  { name: "Base RPC", url: "https://mainnet.base.org", method: "POST" },
+  { name: "x402scan Merchants", url: "https://www.x402scan.com/api/x402/merchants", method: "GET", description: "x402 merchant registry" },
+  { name: "x402scan Resources", url: "https://www.x402scan.com/api/x402/resources", method: "GET", description: "x402 resource registry" },
+  { name: "StableEnrich Exa Search", url: "https://stableenrich.dev/api/exa/search", method: "POST", description: "AI-powered web search" },
+  { name: "StableEnrich Apollo People", url: "https://stableenrich.dev/api/apollo/people-search", method: "POST", description: "People data enrichment" },
+  { name: "AgentCash", url: "https://agentcash.dev/api/send", method: "POST", description: "Agent-to-agent payments" },
+  { name: "Base RPC", url: "https://mainnet.base.org", method: "POST", description: "Base L2 JSON-RPC" },
+  { name: "Giga API", url: "https://stableclaude.dev/api/start", method: "POST", description: "Pay-per-run AI agent execution" },
+  { name: "dTelecom x402", url: "https://x402.dtelecom.org/v1/credits/purchase", method: "POST", description: "WebRTC/STT/TTS for AI agents" },
 ];
+
+function normalizeX402(raw: any): { price: string; network: string; token: string; version: string } | null {
+  if (!raw) return null;
+  const accept = (raw.accepts && raw.accepts[0]) || raw;
+  let price = "";
+  const maxAmount = accept.maxAmountRequired;
+  if (maxAmount != null) {
+    const n = Number(maxAmount);
+    if (!isNaN(n)) {
+      price = "$" + (n / 1_000_000).toFixed(6).replace(/0+$/, "").replace(/\.$/, "") + " USDC";
+    }
+  }
+  return {
+    price,
+    network: String(accept.network || ""),
+    token: "USDC",
+    version: accept.scheme || "x402",
+  };
+}
 
 async function checkEndpoint(ep: typeof ENDPOINTS[0]) {
   const start = Date.now();
@@ -24,7 +45,8 @@ async function checkEndpoint(ep: typeof ENDPOINTS[0]) {
       try {
         const header = res.headers.get("payment-required");
         if (header) {
-          x402Details = JSON.parse(Buffer.from(header, "base64").toString());
+          const decoded = JSON.parse(Buffer.from(header, "base64").toString());
+          x402Details = normalizeX402(decoded);
         }
       } catch {}
     }

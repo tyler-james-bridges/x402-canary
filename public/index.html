@@ -235,23 +235,11 @@
       return ` (${ep.lastStatus})`;
     }
 
-    function renderX402Info(details, expectedPrice) {
+    function renderX402Info(details) {
       if (!details) return '';
 
-      // x402 payment-required header has an accepts array; fall back to flat structure
-      const accept = (details.accepts && details.accepts[0]) || details;
-
-      // maxAmountRequired is in smallest units; USDC has 6 decimals
-      let price = null;
-      const raw = accept.maxAmountRequired;
-      if (raw != null) {
-        const n = Number(raw);
-        if (!isNaN(n)) price = '$' + (n / 1_000_000).toFixed(6).replace(/0+$/, '').replace(/\.$/, '') + ' USDC';
-      }
-
-      const network = accept.network || null;
-      const token = accept.extra?.name || (accept.asset ? 'USDC' : null);
-      const scheme = accept.scheme || null;
+      // Server normalizes x402Details to { price, network, token, version }
+      const { price, network, token, version } = details;
 
       const field = (label, val) =>
         `<div class="x402-field">
@@ -259,18 +247,14 @@
           <div class="x402-value ${val ? '' : 'null'}">${val || 'N/A'}</div>
         </div>`;
 
-      const priceLabel = expectedPrice
-        ? `Price <span class="x402-expected">(expected ${expectedPrice})</span>`
-        : 'Price';
-
       return `<div class="x402-info">
         <div class="x402-field x402-price-field">
-          <div class="x402-label">${priceLabel}</div>
+          <div class="x402-label">Price</div>
           <div class="x402-value ${price ? '' : 'null'}">${price || 'N/A'}</div>
         </div>
         ${field('Network', network)}
-        ${field('Token', token)}
-        ${field('Scheme', scheme)}
+        ${field('Token', token || 'USDC')}
+        ${field('Version', version || 'x402')}
       </div>`;
     }
 
@@ -289,7 +273,7 @@
           </div>
           <div class="card-desc">${ep.description || ''}</div>
           <div class="card-url">${ep.url}</div>
-          ${ep.isX402 ? renderX402Info(ep.x402Details, ep.expectedPrice) : ''}
+          ${ep.isX402 ? renderX402Info(ep.x402Details) : ''}
           <div class="card-metrics">
             <div class="metric">
               <div class="metric-label">Response</div>
@@ -316,7 +300,7 @@
         const { total, online: up, degraded: down, x402Enabled: x402Count } = data.summary;
 
         document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-up').textContent = up;
+        document.getElementById('stat-up').textContent = `${up}/${total}`;
         document.getElementById('stat-down').textContent = down;
         document.getElementById('stat-x402').textContent = `${x402Count}/${total}`;
 
