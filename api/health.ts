@@ -71,6 +71,7 @@ async function checkEndpoint(url: string, method: string) {
 }
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
+  try {
   const results = await Promise.all(
     endpoints.map(async (ep) => {
       const check = await checkEndpoint(ep.url, ep.method);
@@ -93,4 +94,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "no-store");
   res.json({ endpoints: results, generatedAt: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined });
+  }
 }
