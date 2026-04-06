@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { endpoints, checkEndpoint } from "./_lib";
+import { endpoints, checkEndpoint } from "./_lib.js";
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   const results = await Promise.all(
