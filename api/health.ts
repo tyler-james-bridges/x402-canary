@@ -13,7 +13,9 @@ const ENDPOINTS = [
 
 function normalizeX402(raw: any): { price: string; network: string; token: string; version: string } | null {
   if (!raw) return null;
-  const accept = (raw.accepts && raw.accepts[0]) || raw;
+  const accepts = raw.accepts;
+  if (!Array.isArray(accepts) || accepts.length === 0) return null;
+  const accept = accepts[0];
   let price = "";
   const maxAmount = accept.maxAmountRequired;
   if (maxAmount != null) {
@@ -45,7 +47,9 @@ async function checkEndpoint(ep: typeof ENDPOINTS[0]) {
       try {
         const header = res.headers.get("payment-required");
         if (header) {
-          const decoded = JSON.parse(Buffer.from(header, "base64").toString());
+          let decoded: any = null;
+          try { decoded = JSON.parse(Buffer.from(header, "base64").toString()); } catch {}
+          if (!decoded) try { decoded = JSON.parse(header); } catch {}
           x402Details = normalizeX402(decoded);
         }
       } catch {}
