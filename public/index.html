@@ -260,28 +260,40 @@
 
     function renderX402Info(details, expectedPrice) {
       if (!details) return '';
-      const field = (label, val, highlight) =>
+
+      // x402 payment-required header has an accepts array; fall back to flat structure
+      const accept = (details.accepts && details.accepts[0]) || details;
+
+      // maxAmountRequired is in smallest units; USDC has 6 decimals
+      let price = null;
+      const raw = accept.maxAmountRequired;
+      if (raw != null) {
+        const n = Number(raw);
+        if (!isNaN(n)) price = '$' + (n / 1_000_000).toFixed(6).replace(/0+$/, '').replace(/\.$/, '') + ' USDC';
+      }
+
+      const network = accept.network || null;
+      const token = accept.extra?.name || (accept.asset ? 'USDC' : null);
+      const scheme = accept.scheme || null;
+
+      const field = (label, val) =>
         `<div class="x402-field">
           <div class="x402-label">${label}</div>
-          <div class="x402-value ${val ? (highlight ? 'highlight' : '') : 'null'}">${val || 'unknown'}</div>
+          <div class="x402-value ${val ? '' : 'null'}">${val || 'N/A'}</div>
         </div>`;
 
-      const priceMatch = expectedPrice && details.price && details.price === expectedPrice;
-      const priceMismatch = expectedPrice && details.price && details.price !== expectedPrice
-        && expectedPrice !== 'free' && expectedPrice !== 'dynamic';
       const priceLabel = expectedPrice
         ? `Price <span class="x402-expected">(expected ${expectedPrice})</span>`
         : 'Price';
-      const priceClass = priceMismatch ? 'mismatch' : '';
 
       return `<div class="x402-info">
         <div class="x402-field x402-price-field">
           <div class="x402-label">${priceLabel}</div>
-          <div class="x402-value ${details.price ? priceClass : 'null'}">${details.price || 'unknown'}</div>
+          <div class="x402-value ${price ? '' : 'null'}">${price || 'N/A'}</div>
         </div>
-        ${field('Network', details.network)}
-        ${field('Token', details.assetSymbol || details.asset?.slice(0, 10) + '...')}
-        ${field('Version', details.version != null ? `v${details.version}` : null)}
+        ${field('Network', network)}
+        ${field('Token', token)}
+        ${field('Scheme', scheme)}
       </div>`;
     }
 
