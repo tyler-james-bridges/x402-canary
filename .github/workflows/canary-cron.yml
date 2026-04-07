@@ -1,28 +1,50 @@
 name: x402 Canary Check
+
 on:
   schedule:
     - cron: '*/15 * * * *'
+  push:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  check:
+  check-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Run health check
-        run: |
-          curl -s https://canary.0x402.sh/api/health > health.json
-          cat health.json | jq .summary
-      - name: Check for degraded endpoints
-        run: |
-          DEGRADED=$(cat health.json | jq '[.endpoints[] | select(.isHealthy == false)] | length')
-          echo "Degraded: $DEGRADED"
-          if [ "$DEGRADED" -gt "0" ]; then
-            echo "::warning::$DEGRADED endpoint(s) degraded"
-            cat health.json | jq '[.endpoints[] | select(.isHealthy == false) | {name, status, url}]'
-          fi
-      - name: Upload results
-        uses: actions/upload-artifact@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          name: health-check-${{ github.run_number }}
-          path: health.json
-          retention-days: 30
+          node-version: 20
+
+      - name: Run health checks
+        run: node scripts/check-health.js
+
+      - name: Prepare pages
+        run: |
+          mkdir -p _site
+          cp public/index.html _site/
+          cp -r data _site/
+          touch _site/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

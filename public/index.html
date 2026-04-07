@@ -209,7 +209,7 @@
   </div>
 
   <div class="refresh-info">
-    <span>Auto-refresh every 30s</span>
+    <span>Auto-refresh every 30s &mdash; Data updated every 15 minutes via GitHub Actions</span>
     <span id="last-updated">--</span>
   </div>
 
@@ -292,7 +292,7 @@
 
     async function fetchAndRender() {
       try {
-        const res = await fetch('/api/health');
+        const res = await fetch('./data/health.json');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const eps = data.endpoints;
