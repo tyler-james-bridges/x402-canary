@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { getAllMetrics, getX402Summary } from "./metrics.js";
 import { endpoints } from "./endpoints.js";
+import { checkEndpoint } from "./canary.js";
 
 const PORT = 3402;
 const PUBLIC_DIR = path.join(process.cwd(), "public");
@@ -28,11 +29,18 @@ export function startDashboard(): void {
         return {
           ...m,
           name: endpoint?.name,
+          method: endpoint?.method,
           description: endpoint?.description,
           expectedPrice: endpoint?.expectedPrice,
         };
       });
-      jsonResponse(res, { endpoints: payload, generatedAt: new Date().toISOString() });
+      const online = payload.filter((p) => p.isHealthy).length;
+      const x402Enabled = payload.filter((p) => p.isX402).length;
+      jsonResponse(res, {
+        timestamp: new Date().toISOString(),
+        summary: { total: payload.length, online, degraded: payload.length - online, x402Enabled },
+        endpoints: payload,
+      });
       return;
     }
 
@@ -42,6 +50,82 @@ export function startDashboard(): void {
         nameMap
       );
       jsonResponse(res, { ...summary, generatedAt: new Date().toISOString() });
+      return;
+    }
+
+    if (url === "/api/preflight" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+      req.on("end", async () => {
+        try {
+          const { url: targetUrl, method: targetMethod } = JSON.parse(body);
+          if (!targetUrl) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Missing required field: url" }));
+            return;
+          }
+          const result = await checkEndpoint(targetUrl, targetMethod || "GET");
+          // Minimal preflight response for local testing
+          const isSpec = result.isX402;
+          jsonResponse(res, {
+            grade: isSpec ? "A" : "F",
+            endpoint: targetUrl,
+            checks: {
+              specCompliance: {
+                score: isSpec ? 93 : 0,
+                grade: isSpec ? "A" : "F",
+                details: {
+                  returns402: result.status === 402,
+                  hasPaymentRequiredHeader: !!result.x402Details,
+                  headerIsValidBase64Json: !!result.x402Details,
+                  hasX402Version: !!result.x402Details?.version,
+                  hasAcceptsArray: (result.x402Details?.accepts?.length ?? 0) > 0,
+                  acceptsNotEmpty: (result.x402Details?.accepts?.length ?? 0) > 0,
+                  schemeValid: !!result.x402Details?.accepts?.[0]?.scheme,
+                  networkValid: !!result.x402Details?.accepts?.[0]?.network,
+                  amountPresent: !!result.x402Details?.accepts?.[0]?.amount,
+                  amountFormat: true,
+                  assetPresent: !!result.x402Details?.asset,
+                  payToPresent: !!result.x402Details?.payTo,
+                  payToIsAddress: !!result.x402Details?.payTo,
+                  maxTimeoutSecondsPresent: !!result.x402Details?.accepts?.[0]?.maxTimeoutSeconds,
+                  issues: isSpec ? [] : [`Expected HTTP 402, got ${result.status}`],
+                },
+              },
+              performance: {
+                responseTimeMs: result.responseTimeMs,
+                benchmark: result.responseTimeMs < 200 ? "fast" : result.responseTimeMs < 500 ? "normal" : "slow",
+                percentile: "local test",
+              },
+              pricing: result.x402Details ? {
+                price: result.x402Details.price,
+                priceRaw: result.x402Details.priceRaw,
+                network: result.x402Details.network,
+                asset: result.x402Details.assetSymbol || "USDC",
+                position: "at-median",
+                note: "Local test",
+              } : null,
+            },
+            timestamp: result.timestamp,
+          });
+        } catch {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid request body" }));
+        }
+      });
+      return;
+    }
+
+    if (url === "/llms.txt" && req.method === "GET") {
+      const txtPath = path.join(PUBLIC_DIR, "llms.txt");
+      try {
+        const txt = fs.readFileSync(txtPath, "utf-8");
+        res.writeHead(200, { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" });
+        res.end(txt);
+      } catch {
+        res.writeHead(404);
+        res.end("Not found");
+      }
       return;
     }
 

@@ -1,0 +1,42 @@
+{
+  "network": "base",
+  "currency": "USDC",
+  "services": {
+    "trust": {
+      "price": "0.001",
+      "methods": ["GET"],
+      "description": "Pre-flight trust check for x402 endpoints. Returns trust score, spec grade, pricing analysis, and safety recommendation before an agent sends payment.",
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "The x402 endpoint URL to check"
+            },
+            "method": {
+              "type": "string",
+              "description": "HTTP method to use when probing the endpoint (default: GET)",
+              "enum": ["GET", "POST"]
+            }
+          },
+          "required": ["url"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "url": { "type": "string" },
+            "trustScore": { "type": "number", "description": "0-100 composite trust score" },
+            "status": { "type": "string", "enum": ["healthy", "degraded", "unhealthy", "not-x402"] },
+            "specGrade": { "type": "string", "description": "A+ through F spec compliance grade" },
+            "responseTimeMs": { "type": "number" },
+            "price": { "type": "string", "description": "Human-readable price (e.g. $0.01)" },
+            "pricePosition": { "type": "string", "enum": ["cheap", "fair", "expensive"] },
+            "recommendation": { "type": "string", "enum": ["safe-to-pay", "proceed-with-caution", "avoid", "not-an-x402-endpoint"] },
+            "checkedAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -3,24 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>X402 CANARY</title>
+  <title>x402 canary</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><text x='50' y='68' font-family='monospace' font-size='40' font-weight='bold' fill='%23fff' text-anchor='middle'>402</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --bg: #000;
+      --fg: #f5f5f5;
+      --muted: #666;
+      --dim: #444;
+      --border: #333;
+      --accent: #a78bfa;
+      --pass: #00ff94;
+      --warn: #e2a727;
+      --fail: #ff4444;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #000;
-      color: #fff;
-      font-family: "Geist Mono", "Courier New", monospace;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
       font-size: 13px;
       line-height: 1.5;
       min-height: 100vh;
     }
 
     header {
-      border-bottom: 2px solid #fff;
+      border-bottom: 1px solid var(--border);
       padding: 20px 24px;
       display: flex;
       justify-content: space-between;
@@ -32,19 +45,18 @@
     header h1 {
       font-size: 20px;
       font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      letter-spacing: 0.15em;
     }
 
     header .meta {
-      color: #666;
+      color: var(--muted);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .summary-bar {
-      border-bottom: 2px solid #fff;
+      border-bottom: 1px solid var(--border);
       padding: 12px 24px;
       display: flex;
       gap: 32px;
@@ -52,9 +64,9 @@
     }
 
     .stat { display: flex; flex-direction: column; gap: 2px; }
-    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
     .stat-value { font-size: 18px; font-weight: 700; }
-    .stat-value.x402-color { color: #0ff; }
+    .stat-value.x402-color { color: var(--accent); }
 
     .endpoints {
       padding: 24px;
@@ -64,13 +76,13 @@
     }
 
     .card {
-      border: 2px solid #fff;
+      border: 1px solid var(--border);
       padding: 16px;
     }
 
-    .card.down { border-color: #f00; }
-    .card.x402 { border-color: #0ff; }
-    .card.down.x402 { border-color: #f00; } /* down takes priority */
+    .card.down { border-color: var(--fail); }
+    .card.x402 { border-color: var(--accent); }
+    .card.down.x402 { border-color: var(--fail); } /* down takes priority */
 
     .card-header {
       display: flex;
@@ -83,7 +95,6 @@
     .card-name {
       font-size: 13px;
       font-weight: 700;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
       word-break: break-all;
     }
@@ -102,87 +113,416 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       padding: 2px 6px;
-      border: 2px solid #fff;
+      border: 1px solid var(--border);
       white-space: nowrap;
     }
 
-    .badge.up { border-color: #fff; color: #fff; }
-    .badge.down { border-color: #f00; color: #f00; }
-    .badge.unknown { border-color: #666; color: #666; }
-    .badge.x402-badge { border-color: #0ff; color: #0ff; }
+    .badge.up { border-color: var(--pass); color: var(--pass); }
+    .badge.down { border-color: var(--fail); color: var(--fail); }
+    .badge.unknown { border-color: var(--muted); color: var(--muted); }
+    .badge.x402-badge { border-color: var(--accent); color: var(--accent); text-transform: none; }
 
     .card-desc {
-      color: #666;
+      color: var(--muted);
       font-size: 11px;
       margin-bottom: 8px;
-      text-transform: uppercase;
       letter-spacing: 0.03em;
     }
 
     .card-url {
       font-size: 10px;
-      color: #666;
+      color: var(--muted);
       margin-bottom: 14px;
       word-break: break-all;
     }
 
     .x402-info {
-      border: 1px solid #0ff;
+      border: 1px solid var(--accent);
       padding: 8px 10px;
       margin-bottom: 12px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
     }
 
     .x402-field { display: flex; flex-direction: column; gap: 1px; }
-    .x402-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #0ff; }
-    .x402-value { font-size: 11px; word-break: break-all; color: #fff; }
-    .x402-value.null { color: #666; font-style: italic; }
-    .x402-value.mismatch { color: #f80; }
-    .x402-value.highlight { color: #0f0; }
-    .x402-expected { color: #444; font-size: 8px; text-transform: none; letter-spacing: 0; }
+    .x402-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
+    .x402-value { font-size: 11px; word-break: break-all; color: var(--fg); }
+    .x402-value.null { color: var(--muted); font-style: italic; }
+    .x402-value.mismatch { color: var(--warn); }
+    .x402-value.highlight { color: var(--pass); }
+    .x402-expected { color: var(--dim); font-size: 8px; text-transform: none; letter-spacing: 0; }
     .x402-price-field { grid-column: span 2; }
 
     .card-metrics {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      border-top: 1px solid #444;
+      border-top: 1px solid var(--dim);
       padding-top: 12px;
     }
 
     .metric { display: flex; flex-direction: column; gap: 2px; }
-    .metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
+    .metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
     .metric-value { font-size: 13px; font-weight: 500; }
 
-    .loading { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; }
-    .error-msg { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: #f00; }
+    .api-section {
+      border-bottom: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .api-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .api-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .api-desc a { color: var(--accent); text-decoration: none; }
+    .api-desc a:hover { color: var(--fg); }
+
+    .api-endpoints {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .api-endpoint {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .api-method {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border: 1px solid var(--fg);
+      color: var(--fg);
+      flex-shrink: 0;
+    }
+
+    .api-path {
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    .api-note {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .api-example-details { margin-top: 4px; }
+
+    .card-check-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .card-check-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .loading { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+    .error-msg { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fail); }
 
     .refresh-info {
       padding: 12px 24px;
-      border-top: 2px solid #fff;
+      border-top: 1px solid var(--border);
       font-size: 10px;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #666;
+      color: var(--muted);
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
     }
 
+    .refresh-info a { color: var(--muted); text-decoration: none; }
+    .refresh-info a:hover { color: var(--fg); }
+
+    .preflight {
+      border-bottom: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .preflight-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .preflight-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preflight-input,
+    .preflight-select,
+    .preflight-btn {
+      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 8px 12px;
+      height: 40px;
+      outline: none;
+    }
+
+    .preflight-input {
+      flex: 1 1 240px;
+      min-width: 0;
+    }
+
+    .preflight-input::placeholder { color: var(--muted); }
+
+    .preflight-select {
+      flex: 0 0 auto;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 24px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23f5f5f5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+
+    .preflight-btn {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: transparent;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      flex: 0 0 auto;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .preflight-btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    #preflight-report {
+      display: none;
+      border: 1px solid var(--accent);
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    #preflight-report.visible { display: block; }
+    #preflight-report.loading { border-color: var(--muted); }
+
+    .preflight-loading {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .preflight-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .preflight-grade {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .preflight-url {
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-all;
+      text-align: right;
+    }
+
+    .preflight-checks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 16px;
+      margin-bottom: 12px;
+    }
+
+    .preflight-check {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preflight-check-name {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .preflight-check-result {
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .preflight-metrics {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--dim);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .preflight-metric { display: flex; flex-direction: column; gap: 2px; }
+    .preflight-metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+    .preflight-metric-value { font-size: 13px; font-weight: 500; }
+
+    .preflight-details {
+      margin-top: 12px;
+      border-top: 1px solid var(--dim);
+      padding-top: 12px;
+    }
+
+    .preflight-details-toggle {
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .preflight-details-toggle::-webkit-details-marker { display: none; }
+
+    .preflight-details-toggle::before {
+      content: '+ ';
+      color: var(--accent);
+    }
+
+    .preflight-details[open] .preflight-details-toggle::before {
+      content: '- ';
+    }
+
+    .preflight-details-toggle:hover { color: var(--fg); }
+
+    .run-log {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+    }
+
+    .run-line {
+      font-size: 11px;
+      padding: 2px 0;
+      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
+    }
+
+    .run-check-name {
+      color: var(--muted);
+    }
+
+    .run-summary {
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--dim);
+    }
+
+    .preflight-json {
+      margin-top: 10px;
+      padding: 12px;
+      background: #282a36;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      line-height: 1.4;
+      color: #f8f8f2;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .preflight-json .json-key { color: #8be9fd; }
+    .preflight-json .json-string { color: #f1fa8c; }
+    .preflight-json .json-number { color: #bd93f9; }
+    .preflight-json .json-bool { color: #ff79c6; }
+    .preflight-json .json-null { color: #6272a4; }
+
+    .preflight-issues {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--warn);
+    }
+
+    .preflight-issues li {
+      list-style: none;
+      padding: 2px 0;
+    }
+
+    .preflight-issues li::before {
+      content: "- ";
+    }
+
+    .preflight-error {
+      color: var(--fail);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    @media (min-width: 640px) {
+      .preflight-checks {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
     @media (max-width: 480px) {
       header { padding: 16px; }
       .endpoints { padding: 16px; grid-template-columns: 1fr; }
       .summary-bar { padding: 12px 16px; gap: 20px; }
+      .preflight { padding: 16px; }
+      .preflight-form { flex-direction: column; }
+      .preflight-input, .preflight-select, .preflight-btn { width: 100%; flex: none; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>X402 Canary</h1>
-    <div class="meta">Agent Economy Health Monitor</div>
+    <h1>x402 canary</h1>
+    <div class="meta">pre-flight checks for the agent economy</div>
   </header>
 
   <div class="summary-bar">
@@ -204,12 +544,58 @@
     </div>
   </div>
 
+  <div class="preflight">
+    <div class="preflight-label">Pre-flight Check</div>
+    <div class="preflight-form">
+      <input type="text" id="preflight-url" class="preflight-input" placeholder="https://your-endpoint.com/api/..." />
+      <select id="preflight-method" class="preflight-select">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+      </select>
+      <button class="preflight-btn" onclick="runPreflight()">Run</button>
+    </div>
+    <div id="preflight-report"></div>
+  </div>
+
+  <div class="api-section">
+    <div class="api-label">agent integration</div>
+    <div class="api-desc">check any x402 endpoint before you pay. <a href="/llms.txt">llms.txt</a></div>
+    <div class="api-endpoints">
+      <div class="api-endpoint">
+        <div class="api-method">GET</div>
+        <code class="api-path">/api/trust?url={endpoint}</code>
+        <div class="api-note">quick trust score for agents -- returns recommendation before payment</div>
+      </div>
+      <div class="api-endpoint">
+        <div class="api-method">POST</div>
+        <code class="api-path">/api/preflight</code>
+        <div class="api-note">full spec compliance report with grading</div>
+      </div>
+      <div class="api-endpoint">
+        <div class="api-method">GET</div>
+        <code class="api-path">/api/health</code>
+        <div class="api-note">live status of all monitored endpoints</div>
+      </div>
+    </div>
+    <details class="api-example-details">
+      <summary class="preflight-details-toggle">usage example</summary>
+      <pre class="preflight-json">const trust = await fetch(
+  "https://canary.0x402.sh/api/trust?url=" + encodeURIComponent(targetUrl)
+);
+const { trustScore, recommendation } = await trust.json();
+
+if (recommendation === "safe-to-pay") {
+  // proceed with x402 payment
+}</pre>
+    </details>
+  </div>
+
   <div id="content">
     <div class="loading">Loading...</div>
   </div>
 
   <div class="refresh-info">
-    <span>Auto-refresh every 30s</span>
+    <span>built by <a href="https://x.com/tmoney_145" target="_blank">@tmoney_145</a> / deployed on <a href="https://bankr.bot/x402" target="_blank">bankr x402 cloud</a> / <a href="https://github.com/tyler-james-bridges/x402-canary" target="_blank">github</a> / <a href="https://0x402.sh" target="_blank">0x402.sh</a></span>
     <span id="last-updated">--</span>
   </div>
 
@@ -221,25 +607,23 @@
     }
 
     function badgeClass(ep) {
-      if (ep.lastChecked == null) return 'unknown';
+      if (!ep.lastChecked && !ep.timestamp) return 'unknown';
       return ep.isHealthy ? 'up' : 'down';
     }
 
     function badgeText(ep) {
-      if (ep.lastChecked == null) return 'PENDING';
-      return ep.isHealthy ? 'UP' : 'DOWN';
-    }
-
-    function statusLabel(ep) {
-      if (ep.lastStatus == null) return '';
-      return ` (${ep.lastStatus})`;
+      if (!ep.lastChecked && !ep.timestamp) return 'PENDING';
+      var s = ep.lastStatus || ep.status || 0;
+      return ep.isHealthy ? 'UP (' + s + ')' : 'DOWN';
     }
 
     function renderX402Info(details) {
       if (!details) return '';
 
-      // Server normalizes x402Details to { price, network, token, version }
-      const { price, network, token, version } = details;
+      // Handle both Vercel shape (price/network/token) and local shape (price/network/assetSymbol)
+      const price = details.price || null;
+      const network = details.network || null;
+      const payTo = details.payTo || null;
 
       const field = (label, val) =>
         `<div class="x402-field">
@@ -247,14 +631,12 @@
           <div class="x402-value ${val ? '' : 'null'}">${val || 'N/A'}</div>
         </div>`;
 
+      const shortAddr = payTo ? payTo.slice(0, 6) + '...' + payTo.slice(-4) : null;
+
       return `<div class="x402-info">
-        <div class="x402-field x402-price-field">
-          <div class="x402-label">Price</div>
-          <div class="x402-value ${price ? '' : 'null'}">${price || 'N/A'}</div>
-        </div>
+        ${field('Price', price)}
         ${field('Network', network)}
-        ${field('Token', token || 'USDC')}
-        ${field('Version', version || 'x402')}
+        ${field('Pay To', shortAddr)}
       </div>`;
     }
 
@@ -267,8 +649,8 @@
           <div class="card-header">
             <div class="card-name">${ep.name || ep.url}</div>
             <div class="badges">
-              <div class="badge ${bc}">${badgeText(ep)}${statusLabel(ep)}</div>
-              ${ep.isX402 ? '<div class="badge x402-badge">X402</div>' : ''}
+              <div class="badge ${bc}">${badgeText(ep)}</div>
+              ${ep.isX402 ? '<div class="badge x402-badge">x402</div>' : ''}
             </div>
           </div>
           <div class="card-desc">${ep.description || ''}</div>
@@ -277,13 +659,14 @@
           <div class="card-metrics">
             <div class="metric">
               <div class="metric-label">Response</div>
-              <div class="metric-value">${fmt(ep.responseTimeMs)}</div>
+              <div class="metric-value">${fmt(ep.responseTimeMs || ep.avgResponseTimeMs)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Status</div>
-              <div class="metric-value">${ep.status || 'ERR'}</div>
+              <div class="metric-label">Uptime</div>
+              <div class="metric-value">${ep.uptimePct != null ? ep.uptimePct + '%' : '--'}</div>
             </div>
           </div>
+          ${ep.isX402 ? '<button class="card-check-btn" onclick="checkEndpoint(\'' + ep.url + '\',\'' + (ep.method || 'GET') + '\')">pre-flight</button>' : ''}
         </div>
       `;
     }
@@ -321,6 +704,154 @@
       refreshTimer = setTimeout(() => {
         fetchAndRender().then(scheduleRefresh);
       }, 30_000);
+    }
+
+    // Pre-flight check
+    function checkEndpoint(url, method) {
+      document.getElementById('preflight-url').value = url;
+      document.getElementById('preflight-method').value = method || 'GET';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      runPreflight();
+    }
+
+    document.getElementById('preflight-url').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') runPreflight();
+    });
+
+    function highlightJson(obj) {
+      var raw = JSON.stringify(obj, null, 2);
+      return raw.replace(/("(?:[^"\\]|\\.)*")\s*:/g, '<span class="json-key">$1</span>:')
+        .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-string">$1</span>')
+        .replace(/:\s*(\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+        .replace(/:\s*(true|false)/g, ': <span class="json-bool">$1</span>')
+        .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>');
+    }
+
+    function gradeColor(grade) {
+      if (!grade) return '#666';
+      var g = grade.charAt(0).toUpperCase();
+      if (g === 'A') return '#00ff94';
+      if (g === 'B') return '#a78bfa';
+      if (g === 'C') return '#e2a727';
+      return '#ff4444';
+    }
+
+    async function runPreflight() {
+      var url = document.getElementById('preflight-url').value.trim();
+      var method = document.getElementById('preflight-method').value;
+      var report = document.getElementById('preflight-report');
+
+      if (!url) {
+        report.className = 'visible';
+        report.innerHTML = '<div class="preflight-error">Enter a URL to check</div>';
+        return;
+      }
+
+      report.className = 'visible loading';
+      report.innerHTML = '<div class="preflight-loading">Running pre-flight...</div>';
+
+      try {
+        var res = await fetch('/api/preflight', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url, method: method })
+        });
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+
+        report.className = 'visible';
+        report.innerHTML = renderPreflightReport(data, url);
+      } catch (err) {
+        report.className = 'visible';
+        report.innerHTML = '<div class="preflight-error">Check failed: ' + err.message + '</div>';
+      }
+    }
+
+    function renderPreflightReport(data, url) {
+      var grade = data.grade || '?';
+      var spec = (data.checks && data.checks.specCompliance) || {};
+      var details = spec.details || {};
+      var perf = (data.checks && data.checks.performance) || {};
+      var pricing = (data.checks && data.checks.pricing) || null;
+      var issues = details.issues || [];
+
+      var checkLabels = {
+        returns402: '402 status',
+        hasPaymentRequiredHeader: 'payment header',
+        headerIsValidBase64Json: 'valid base64 json',
+        hasX402Version: 'x402 version',
+        hasAcceptsArray: 'accepts array',
+        acceptsNotEmpty: 'accepts not empty',
+        schemeValid: 'scheme',
+        networkValid: 'network',
+        amountPresent: 'amount',
+        amountFormat: 'amount format',
+        assetPresent: 'asset',
+        payToPresent: 'payTo',
+        payToIsAddress: 'payTo is address',
+        maxTimeoutSecondsPresent: 'timeout'
+      };
+      var checkKeys = Object.keys(details).filter(function(k) { return k !== 'issues'; });
+      var checksHtml = checkKeys.map(function(name) {
+        var passed = details[name];
+        var color = passed ? '#00ff94' : '#ff4444';
+        var label = passed ? 'PASS' : 'FAIL';
+        return '<div class="preflight-check">' +
+          '<span class="preflight-check-name">' + (checkLabels[name] || name) + '</span>' +
+          '<span class="preflight-check-result" style="color:' + color + '">' + label + '</span>' +
+          '</div>';
+      }).join('');
+
+      var metricField = function(label, value) {
+        return '<div class="preflight-metric">' +
+          '<div class="preflight-metric-label">' + label + '</div>' +
+          '<div class="preflight-metric-value">' + (value != null ? value : '--') + '</div>' +
+          '</div>';
+      };
+
+      var metricsHtml = '<div class="preflight-metrics">' +
+        metricField('Response', perf.responseTimeMs ? perf.responseTimeMs + 'ms' : '--') +
+        metricField('Benchmark', perf.benchmark || '--') +
+        metricField('Price', pricing ? pricing.price : '--') +
+        metricField('Price Position', pricing ? pricing.position : '--') +
+        metricField('Score', spec.score != null ? spec.score + '/100' : '--') +
+        '</div>';
+
+      var issuesHtml = '';
+      if (issues.length > 0) {
+        issuesHtml = '<ul class="preflight-issues">' +
+          issues.map(function(i) { return '<li>' + i + '</li>'; }).join('') +
+          '</ul>';
+      }
+
+      var passCount = checkKeys.filter(function(k) { return details[k]; }).length;
+      var totalCount = checkKeys.length;
+      var allPassed = passCount === totalCount;
+
+      // Sequential status log like a CI pipeline
+      var statusLines = checkKeys.map(function(name) {
+        var passed = details[name];
+        var icon = passed ? '<span style="color:#00ff94">ok</span>' : '<span style="color:#ff4444">fail</span>';
+        return '<div class="run-line">' + icon + ' <span class="run-check-name">' + (checkLabels[name] || name) + '</span></div>';
+      }).join('');
+
+      var summaryColor = allPassed ? '#00ff94' : (passCount > totalCount / 2 ? '#e2a727' : '#ff4444');
+      var summaryText = allPassed ? 'all checks passed' : passCount + '/' + totalCount + ' checks passed';
+
+      return '<div class="preflight-header">' +
+        '<div class="preflight-grade" style="color:' + gradeColor(grade) + '">' + grade + '</div>' +
+        '<div class="preflight-url">' + url + '</div>' +
+        '</div>' +
+        '<div class="run-log">' + statusLines +
+        '<div class="run-summary" style="color:' + summaryColor + '">' + summaryText + '</div>' +
+        '</div>' +
+        metricsHtml +
+        issuesHtml +
+        '<details class="preflight-details">' +
+        '<summary class="preflight-details-toggle">api response</summary>' +
+        '<pre class="preflight-json">' + highlightJson(data) + '</pre>' +
+        '</details>';
     }
 
     fetchAndRender().then(scheduleRefresh);

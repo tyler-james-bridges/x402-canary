@@ -1,0 +1,114 @@
+# x402 Canary API
+
+Pre-flight trust checks for the x402 agent economy.
+Base URL: https://canary.0x402.sh
+
+## Endpoints
+
+### GET /api/trust?url={endpoint_url}
+
+Quick trust check for agents. Returns a trust score before you send payment.
+
+Query params:
+- url (required): The x402 endpoint URL to check
+- method (optional): HTTP method to probe with (default: GET)
+
+Response:
+```json
+{
+  "url": "https://stableenrich.dev/api/exa/search",
+  "trustScore": 92,
+  "status": "healthy",
+  "specGrade": "A",
+  "responseTimeMs": 145,
+  "price": "$0.01",
+  "pricePosition": "fair",
+  "recommendation": "safe-to-pay",
+  "checkedAt": "2026-04-08T12:00:00Z"
+}
+```
+
+Trust score (0-100) is weighted: 60% spec compliance, 20% performance, 20% reachability.
+
+Recommendation values:
+- "safe-to-pay" (score >= 80)
+- "proceed-with-caution" (score 50-79)
+- "avoid" (score < 50)
+- "not-an-x402-endpoint" (no 402 response)
+
+### POST /api/preflight
+
+Full pre-flight validation with spec compliance grading.
+
+Request body:
+```json
+{
+  "url": "https://some-endpoint.com/api/service",
+  "method": "POST"
+}
+```
+
+Response:
+```json
+{
+  "grade": "A",
+  "endpoint": "https://...",
+  "checks": {
+    "specCompliance": {
+      "score": 93,
+      "grade": "A",
+      "details": {
+        "returns402": true,
+        "hasPaymentRequiredHeader": true,
+        "headerIsValidBase64Json": true,
+        "hasX402Version": true,
+        "hasAcceptsArray": true,
+        "acceptsNotEmpty": true,
+        "schemeValid": true,
+        "networkValid": true,
+        "amountPresent": true,
+        "amountFormat": true,
+        "assetPresent": true,
+        "payToPresent": true,
+        "payToIsAddress": true,
+        "maxTimeoutSecondsPresent": true,
+        "issues": []
+      }
+    },
+    "performance": {
+      "responseTimeMs": 142,
+      "benchmark": "fast",
+      "percentile": "p50 for this category"
+    },
+    "pricing": {
+      "price": "$0.01",
+      "priceRaw": "10000",
+      "network": "Base",
+      "asset": "USDC",
+      "position": "at-median",
+      "note": "At market median"
+    }
+  },
+  "timestamp": "2026-04-08T12:00:00Z"
+}
+```
+
+Grade scale: A+ (97-100), A (93-96), A- (90-92), B+ (87-89), B (83-86), B- (80-82), C+ (77-79), C (73-76), C- (70-72), D (60-69), F (below 60).
+
+### GET /api/health
+
+Live status of all monitored x402 endpoints. Free, no auth.
+
+### Agent Integration
+
+Before paying any x402 endpoint, check it:
+
+```
+const trust = await fetch("https://canary.0x402.sh/api/trust?url=" + encodeURIComponent(targetUrl));
+const { trustScore, recommendation } = await trust.json();
+if (recommendation === "safe-to-pay") {
+  // proceed with payment
+}
+```
+
+Built by @tmoney_145. Deployed on Bankr x402 Cloud.
