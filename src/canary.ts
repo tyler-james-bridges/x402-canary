@@ -34,7 +34,7 @@ export interface CheckResult {
 // Known USDC assets (6 decimals)
 const USDC_ASSETS: Record<string, string> = {
   "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": "USDC",   // Base
-  "0x20c0000000000000000000b9537d11c60e8b50": "USDC",      // Abstract (lowercase may vary)
+  "0x84a71ccd554cc1b02749b35d22f684cc8ec987e1": "USDC",      // Abstract (Bridged USDC Stargate)
   "epjfwdd5aufqssqem2qn1xzybapC8G4wEGGkZwyTDt1v": "USDC", // Solana
 };
 

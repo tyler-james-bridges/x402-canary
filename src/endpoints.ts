@@ -7,7 +7,7 @@ export interface Endpoint {
 }
 
 export const endpoints: Endpoint[] = [
-  // Bankr x402 Cloud — TJB
+  // Bankr x402 Cloud
   {
     name: "Bankr x402 Lint",
     url: "https://x402.bankr.bot/0x72e45a93491a6acfd02da6ceb71a903f3d3b6d08/lint",
@@ -16,14 +16,6 @@ export const endpoints: Endpoint[] = [
     expectedPrice: "$0.01",
   },
   {
-    name: "Bankr x402 Health",
-    url: "https://x402.bankr.bot/0x72e45a93491a6acfd02da6ceb71a903f3d3b6d08/health",
-    method: "POST",
-    description: "Quick x402 health check via Bankr Cloud",
-    expectedPrice: "$0.001",
-  },
-  // Bankr x402 Cloud — LITCOIN
-  {
     name: "LITCOIN Chat",
     url: "https://x402.bankr.bot/0xcea8f39419541e6ac9efbdd37b60657b4093ef08/chat",
     method: "POST",
@@ -31,21 +23,12 @@ export const endpoints: Endpoint[] = [
     expectedPrice: "$0.001",
   },
   {
-    name: "LITCOIN Compute",
-    url: "https://x402.bankr.bot/0xcea8f39419541e6ac9efbdd37b60657b4093ef08/compute",
-    method: "POST",
-    description: "AI inference with pay-per-request, no API keys",
-    expectedPrice: "$0.001",
-  },
-  // Bankr x402 Cloud — buzzbd.ai
-  {
     name: "DeFi Yield Compare",
     url: "https://x402.bankr.bot/0xfa04c7d627ba707a1ad17e72e094b45150665593/yield-compare",
     method: "GET",
     description: "Best DeFi yields across 51 protocols ranked by APY",
     expectedPrice: "$0.01",
   },
-  // Bankr x402 Cloud — market data
   {
     name: "Trending Base Coins",
     url: "https://x402.bankr.bot/0xf47535adb19c8905f9384e423063708651ac2805/trending-base-coins",
@@ -53,7 +36,6 @@ export const endpoints: Endpoint[] = [
     description: "Trending tokens on Base with price and volume data",
     expectedPrice: "$0.001",
   },
-  // Bankr x402 Cloud — ecological data
   {
     name: "Regen Oracle",
     url: "https://x402.bankr.bot/0x538aa4800ae2bd8e90556899514376ab96113a8e/regen-oracle",
@@ -61,14 +43,7 @@ export const endpoints: Endpoint[] = [
     description: "Live ecological credit data from Regen Ledger",
     expectedPrice: "$0.005",
   },
-  // x402scan — payment data explorer
-  {
-    name: "x402scan Merchants",
-    url: "https://www.x402scan.com/api/x402/merchants",
-    method: "GET",
-    description: "Paginated list of merchants by volume",
-    expectedPrice: "$0.01",
-  },
+  // x402scan
   {
     name: "x402scan Resources",
     url: "https://www.x402scan.com/api/x402/resources",
@@ -76,14 +51,7 @@ export const endpoints: Endpoint[] = [
     description: "All indexed x402 resources",
     expectedPrice: "$0.01",
   },
-  {
-    name: "x402scan Facilitators",
-    url: "https://www.x402scan.com/api/x402/facilitators",
-    method: "GET",
-    description: "x402 facilitators with stats",
-    expectedPrice: "$0.01",
-  },
-  // StableEnrich — pay-per-request API access
+  // StableEnrich
   {
     name: "StableEnrich Exa Search",
     url: "https://stableenrich.dev/api/exa/search",
@@ -98,28 +66,52 @@ export const endpoints: Endpoint[] = [
     description: "Scrape URLs with JS rendering",
     expectedPrice: "$0.0126",
   },
+  // AFK Onchain
   {
-    name: "StableEnrich Apollo People",
-    url: "https://stableenrich.dev/api/apollo/people-search",
+    name: "AFK Assembly Intel",
+    url: "https://afkonchain.xyz/api/assembly/intel",
+    method: "GET",
+    description: "AI Assembly Council governance data on Abstract",
+    expectedPrice: "$0.01",
+  },
+  {
+    name: "AFK Contract Read",
+    url: "https://afkonchain.xyz/api/read?contract=0x0A013Ca2Df9d6C399F9597d438d79Be71B43cb63&function=registrationFee()%20view%20returns%20(uint256)",
+    method: "GET",
+    description: "Read any smart contract on Abstract L2",
+    expectedPrice: "$0.001",
+  },
+  // StableSocial
+  {
+    name: "StableSocial TikTok Profile",
+    url: "https://stablesocial.dev/api/tiktok/profile",
     method: "POST",
-    description: "Apollo people search API",
+    description: "TikTok user profile data",
+    expectedPrice: "$0.06",
+  },
+  // StableEmail
+  {
+    name: "StableEmail Send",
+    url: "https://stableemail.dev/api/send",
+    method: "POST",
+    description: "Pay-per-send email delivery",
     expectedPrice: "$0.02",
   },
-  // AgentCash
+  // StableUpload
   {
-    name: "AgentCash Send",
-    url: "https://agentcash.dev/api/send",
+    name: "StableUpload Upload",
+    url: "https://stableupload.dev/api/upload",
     method: "POST",
-    description: "Send USDC on Base/Solana",
+    description: "Pay-per-upload file hosting",
     expectedPrice: "dynamic",
   },
-  // Infrastructure
+  // StableTravel
   {
-    name: "Base RPC",
-    url: "https://mainnet.base.org",
-    method: "POST",
-    description: "Base L2 mainnet RPC",
-    expectedPrice: "free",
+    name: "StableTravel Google Flights",
+    url: "https://stabletravel.dev/api/google-flights/search",
+    method: "GET",
+    description: "Google Flights search via x402",
+    expectedPrice: "$0.02",
   },
   // Other x402 services
   {
