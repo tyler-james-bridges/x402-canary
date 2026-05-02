@@ -1,860 +1,735 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>x402 canary</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><text x='50' y='68' font-family='monospace' font-size='40' font-weight='bold' fill='%23fff' text-anchor='middle'>402</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #000;
-      --fg: #f5f5f5;
-      --muted: #666;
-      --dim: #444;
-      --border: #333;
-      --accent: #a78bfa;
-      --pass: #00ff94;
-      --warn: #e2a727;
-      --fail: #ff4444;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg);
-      color: var(--fg);
-      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
-      font-size: 13px;
-      line-height: 1.5;
-      min-height: 100vh;
-    }
-
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    header h1 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-    }
-
-    header .meta {
-      color: var(--muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .summary-bar {
-      border-bottom: 1px solid var(--border);
-      padding: 12px 24px;
-      display: flex;
-      gap: 32px;
-      flex-wrap: wrap;
-    }
-
-    .stat { display: flex; flex-direction: column; gap: 2px; }
-    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-    .stat-value { font-size: 18px; font-weight: 700; }
-    .stat-value.x402-color { color: var(--accent); }
-
-    .endpoints {
-      padding: 24px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      border: 1px solid var(--border);
-      padding: 16px;
-    }
-
-    .card.down { border-color: var(--fail); }
-    .card.x402 { border-color: var(--accent); }
-    .card.down.x402 { border-color: var(--fail); } /* down takes priority */
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-      gap: 8px;
-    }
-
-    .card-name {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      word-break: break-all;
-    }
-
-    .badges {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      flex-shrink: 0;
-    }
-
-    .badge {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    .badge.up { border-color: var(--pass); color: var(--pass); }
-    .badge.down { border-color: var(--fail); color: var(--fail); }
-    .badge.unknown { border-color: var(--muted); color: var(--muted); }
-    .badge.x402-badge { border-color: var(--accent); color: var(--accent); text-transform: none; }
-
-    .card-desc {
-      color: var(--muted);
-      font-size: 11px;
-      margin-bottom: 8px;
-      letter-spacing: 0.03em;
-    }
-
-    .card-url {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 14px;
-      word-break: break-all;
-    }
-
-    .x402-info {
-      border: 1px solid var(--accent);
-      padding: 8px 10px;
-      margin-bottom: 12px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-    }
-
-    .x402-field { display: flex; flex-direction: column; gap: 1px; }
-    .x402-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
-    .x402-value { font-size: 11px; word-break: break-all; color: var(--fg); }
-    .x402-value.null { color: var(--muted); font-style: italic; }
-    .x402-value.mismatch { color: var(--warn); }
-    .x402-value.highlight { color: var(--pass); }
-    .x402-expected { color: var(--dim); font-size: 8px; text-transform: none; letter-spacing: 0; }
-    .x402-price-field { grid-column: span 2; }
-
-    .card-metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      border-top: 1px solid var(--dim);
-      padding-top: 12px;
-    }
-
-    .metric { display: flex; flex-direction: column; gap: 2px; }
-    .metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-    .metric-value { font-size: 13px; font-weight: 500; }
-
-    .api-section {
-      border-bottom: 1px solid var(--border);
-      padding: 24px;
-    }
-
-    .api-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .api-desc {
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
-    .api-desc a { color: var(--accent); text-decoration: none; }
-    .api-desc a:hover { color: var(--fg); }
-
-    .api-endpoints {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .api-endpoint {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .api-method {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 5px;
-      border: 1px solid var(--fg);
-      color: var(--fg);
-      flex-shrink: 0;
-    }
-
-    .api-path {
-      font-size: 12px;
-      color: var(--accent);
-    }
-
-    .api-note {
-      font-size: 10px;
-      color: var(--muted);
-    }
-
-    .api-example-details { margin-top: 4px; }
-
-    .card-check-btn {
-      width: 100%;
-      margin-top: 12px;
-      padding: 6px;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-
-    .card-check-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .loading { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-    .error-msg { padding: 48px 24px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fail); }
-
-    .refresh-info {
-      padding: 12px 24px;
-      border-top: 1px solid var(--border);
-      font-size: 10px;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .refresh-info a { color: var(--muted); text-decoration: none; }
-    .refresh-info a:hover { color: var(--fg); }
-
-    .preflight {
-      border-bottom: 1px solid var(--border);
-      padding: 24px;
-    }
-
-    .preflight-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-
-    .preflight-form {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .preflight-input,
-    .preflight-select,
-    .preflight-btn {
-      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
-      font-size: 13px;
-      background: var(--bg);
-      color: var(--fg);
-      border: 1px solid var(--border);
-      border-radius: 0;
-      padding: 8px 12px;
-      height: 40px;
-      outline: none;
-    }
-
-    .preflight-input {
-      flex: 1 1 240px;
-      min-width: 0;
-    }
-
-    .preflight-input::placeholder { color: var(--muted); }
-
-    .preflight-select {
-      flex: 0 0 auto;
-      cursor: pointer;
-      -webkit-appearance: none;
-      appearance: none;
-      padding-right: 24px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23f5f5f5'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-    }
-
-    .preflight-btn {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: transparent;
-      text-transform: uppercase;
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      flex: 0 0 auto;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .preflight-btn:hover {
-      background: var(--accent);
-      color: var(--bg);
-    }
-
-    #preflight-report {
-      display: none;
-      border: 1px solid var(--accent);
-      padding: 16px;
-      margin-top: 16px;
-    }
-
-    #preflight-report.visible { display: block; }
-    #preflight-report.loading { border-color: var(--muted); }
-
-    .preflight-loading {
-      color: var(--muted);
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .preflight-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .preflight-grade {
-      font-size: 32px;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .preflight-url {
-      font-size: 11px;
-      color: var(--muted);
-      word-break: break-all;
-      text-align: right;
-    }
-
-    .preflight-checks {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px 16px;
-      margin-bottom: 12px;
-    }
-
-    .preflight-check {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .preflight-check-name {
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-    }
-
-    .preflight-check-result {
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .preflight-metrics {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      border-top: 1px solid var(--dim);
-      padding-top: 12px;
-      margin-top: 12px;
-    }
-
-    .preflight-metric { display: flex; flex-direction: column; gap: 2px; }
-    .preflight-metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-    .preflight-metric-value { font-size: 13px; font-weight: 500; }
-
-    .preflight-details {
-      margin-top: 12px;
-      border-top: 1px solid var(--dim);
-      padding-top: 12px;
-    }
-
-    .preflight-details-toggle {
-      font-size: 10px;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      cursor: pointer;
-      list-style: none;
-    }
-
-    .preflight-details-toggle::-webkit-details-marker { display: none; }
-
-    .preflight-details-toggle::before {
-      content: '+ ';
-      color: var(--accent);
-    }
-
-    .preflight-details[open] .preflight-details-toggle::before {
-      content: '- ';
-    }
-
-    .preflight-details-toggle:hover { color: var(--fg); }
-
-    .run-log {
-      margin-bottom: 12px;
-      padding: 12px;
-      background: #0a0a0a;
-      border: 1px solid var(--border);
-    }
-
-    .run-line {
-      font-size: 11px;
-      padding: 2px 0;
-      font-family: "DM Mono", "SF Mono", "Monaco", "Fira Code", monospace;
-    }
-
-    .run-check-name {
-      color: var(--muted);
-    }
-
-    .run-summary {
-      font-size: 11px;
-      font-weight: 700;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--dim);
-    }
-
-    .preflight-json {
-      margin-top: 10px;
-      padding: 12px;
-      background: #282a36;
-      border: 1px solid var(--border);
-      font-size: 11px;
-      line-height: 1.4;
-      color: #f8f8f2;
-      overflow-x: auto;
-      white-space: pre;
-    }
-
-    .preflight-json .json-key { color: #8be9fd; }
-    .preflight-json .json-string { color: #f1fa8c; }
-    .preflight-json .json-number { color: #bd93f9; }
-    .preflight-json .json-bool { color: #ff79c6; }
-    .preflight-json .json-null { color: #6272a4; }
-
-    .preflight-issues {
-      margin-top: 12px;
-      font-size: 11px;
-      color: var(--warn);
-    }
-
-    .preflight-issues li {
-      list-style: none;
-      padding: 2px 0;
-    }
-
-    .preflight-issues li::before {
-      content: "- ";
-    }
-
-    .preflight-error {
-      color: var(--fail);
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    @media (min-width: 640px) {
-      .preflight-checks {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    @media (max-width: 480px) {
-      header { padding: 16px; }
-      .endpoints { padding: 16px; grid-template-columns: 1fr; }
-      .summary-bar { padding: 12px 16px; gap: 20px; }
-      .preflight { padding: 16px; }
-      .preflight-form { flex-direction: column; }
-      .preflight-input, .preflight-select, .preflight-btn { width: 100%; flex: none; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>x402 canary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* bankr-inspired: warm cream bg, near-black ink, lilac accent, terracotta spice */
+  :root{
+    --bg:#ece8e0;
+    --bg-2:#e4dfd3;
+    --bg-3:#dbd5c5;
+    --ink:#141413;
+    --ink-2:#3d3a35;
+    --ink-3:#6f6b62;
+    --ink-4:#9b958a;
+    --rule:#d4cebd;
+    --rule-2:#c4bda8;
+    --card:#f3efe8;
+    --primary:#8a7ce0;         /* lilac — bankr accent */
+    --primary-ink:#1a1635;     /* readable on lilac */
+    --ok:#3f8a5c;              /* forest, desaturated */
+    --warn:#d97a3a;            /* bankr terracotta */
+    --bad:#b0452e;             /* brick */
+    --mac-r:#ed6a5e;
+    --mac-y:#f5bd4f;
+    --mac-g:#62c554;
+  }
+  html.dark{
+    --bg:#1a1d24;
+    --bg-2:#22262f;
+    --bg-3:#2a2f39;
+    --ink:#f0ece2;
+    --ink-2:#c2bdae;
+    --ink-3:#898578;
+    --ink-4:#5a5649;
+    --rule:#333845;
+    --rule-2:#434959;
+    --card:#23272f;
+    --primary:#b9abf0;
+    --primary-ink:#1a1635;
+    --ok:#6fc58a;
+    --warn:#e89360;
+    --bad:#d86a52;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.55}
+  .mono,pre,code,.url-bar input,.url-bar .prompt,.checks-log,.ep .path,.api-row .path,.chip{font-family:'JetBrains Mono',ui-monospace,monospace}
+  a{color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule-2)}
+  a:hover{color:var(--ink);text-decoration-color:var(--primary)}
+  button{font:inherit;color:inherit;cursor:pointer;background:transparent;border:0}
+  .sans{font-family:'Inter',system-ui,sans-serif}
+
+  /* ─── top status bar ─── */
+  .topbar{border-bottom:1px solid var(--rule);background:var(--primary);padding:10px 24px;display:flex;justify-content:space-between;align-items:center;gap:24px;font-size:12px;color:var(--primary-ink);flex-wrap:wrap;font-family:'JetBrains Mono',monospace}
+  .topbar b{color:var(--primary-ink);font-weight:700}
+  .topbar a{color:var(--primary-ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in oklab, var(--primary-ink) 40%, transparent)}
+  .topbar a:hover{text-decoration-color:var(--primary-ink)}
+  /* live-dot overrides inside topbar (uses primary-ink backdrop) */
+  .topbar .live-dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in oklab, var(--ok) 30%, transparent)}
+  .topbar .live-dot::after{border-color:var(--primary-ink);opacity:.4}
+  .topbar .left{display:flex;gap:18px;align-items:center}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);position:relative;box-shadow:0 0 0 3px color-mix(in oklab, var(--ok) 20%, transparent)}
+  .live-dot::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid var(--ok);animation:ping 2s ease-out infinite}
+  @keyframes ping{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.2);opacity:0}}
+  .topbar b{color:var(--ink)}
+  .topbar .right{display:flex;gap:16px;align-items:center}
+  .topbar a{text-decoration:none}
+
+  main{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* ─── hero ─── */
+  .hero{padding:60px 0 36px;display:grid;grid-template-columns:1fr auto;align-items:end;gap:32px;border-bottom:1px solid var(--rule)}
+  .hero h1{font-family:'Inter',sans-serif;font-size:58px;line-height:.98;letter-spacing:-.04em;margin:0 0 18px;font-weight:800;color:var(--ink);text-wrap:balance}
+  .hero h1 em{font-style:normal;color:var(--primary);font-weight:800}
+  .hero .sub{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-2);max-width:54ch;margin:0;line-height:1.65}
+  .hero .sub b{color:var(--ink)}
+
+  /* signal: real canary pulse */
+  .pulse-card{width:260px;flex-shrink:0;border:1px solid var(--rule);border-radius:10px;background:var(--card);padding:0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 var(--rule-2), 0 4px 16px -8px rgba(20,20,19,.15)}
+  .pulse-chrome{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg-3);border-bottom:1px solid var(--rule)}
+  .pulse-chrome .d{width:11px;height:11px;border-radius:50%}
+  .pulse-chrome .d.r{background:var(--mac-r)}
+  .pulse-chrome .d.y{background:var(--mac-y)}
+  .pulse-chrome .d.g{background:var(--mac-g)}
+  .pulse-chrome .title{margin-left:auto;margin-right:auto;transform:translateX(-16px);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)}
+  .pulse-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .pulse-body .pulse-head{padding:0}
+  .pulse-head{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .pulse-head b{color:var(--ink)}
+  .pulse-head .live{display:flex;align-items:center;gap:6px}
+  .pulse-head .live .live-dot{width:5px;height:5px;box-shadow:0 0 0 2px color-mix(in oklab, var(--ok) 20%, transparent)}
+  .pulse-head .live .live-dot::after{inset:-2px;border-width:.5px}
+  .pulse-svg{width:100%;height:48px;display:block}
+  .pulse-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3)}
+  .pulse-foot b{color:var(--ink);font-weight:500}
+
+  /* ─── the tool ─── */
+  .tool-section{padding:32px 0 40px;border-bottom:1px solid var(--rule)}
+  .tool-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+  .tool-head .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .tool-head .l b{color:var(--ink)}
+
+  .method-tabs{display:inline-flex;background:var(--bg-2);border:1px solid var(--rule);border-radius:7px;padding:2px;gap:2px}
+  .method-tabs button{padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.04em}
+  .method-tabs button.on{background:var(--primary);color:var(--primary-ink)}
+
+  .url-bar{display:flex;border:1px solid var(--rule-2);border-radius:10px;background:var(--card);overflow:hidden;transition:border-color .15s, box-shadow .15s}
+  .url-bar:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent)}
+  .url-bar .prompt{padding:14px 8px 14px 16px;font-size:14px;color:var(--ink-3);display:flex;align-items:center;user-select:none}
+  .url-bar .prompt::before{content:"$";color:var(--warn);margin-right:8px;font-weight:700}
+  .url-bar input{flex:1;border:0;outline:0;background:transparent;padding:14px 12px;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink);min-width:0}
+  .url-bar input::placeholder{color:var(--ink-4)}
+  .url-bar .run{background:var(--ink);color:var(--bg);padding:0 22px;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:8px;min-width:120px;justify-content:center;font-family:'JetBrains Mono',monospace}
+  .url-bar .run:hover{filter:brightness(1.1)}
+  .url-bar .run:disabled{opacity:.65;cursor:wait}
+  .spin{width:10px;height:10px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .url-bar .run.loading .spin{display:block}
+  .url-bar .run.loading .t{display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .chiprow{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--ink-3)}
+  .chiprow .lbl{letter-spacing:.06em;text-transform:uppercase;margin-right:4px;font-family:'Inter',sans-serif}
+  .chip{font-size:12px;padding:4px 10px;border:1px solid var(--rule-2);border-radius:999px;background:var(--card);color:var(--ink-2)}
+  .chip:hover{color:var(--ink);border-color:var(--ink-3)}
+  .chip.warn{color:var(--warn)}
+  .chip.bad{color:var(--bad)}
+
+  /* ─── report (terminal-style) ─── */
+  .report{margin-top:22px;display:none}
+  .report.show{display:block;animation:fadein .3s ease both}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .report-top{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;padding:14px 16px;border:1px solid var(--rule);border-radius:10px 10px 0 0;background:var(--card);border-bottom:0}
+  .ring{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;position:relative;flex-shrink:0}
+  .ring::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--card)}
+  .ring .n{position:relative;z-index:1;font-weight:600;font-size:18px;color:var(--ink);text-align:center}
+  .ring .n small{display:block;font-size:8px;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;margin-top:1px;font-weight:500}
+  .verdict .l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+  .verdict .r{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+  .verdict .r em{font-style:normal;color:var(--primary)}
+  .verdict .r.warn em{color:var(--warn)}
+  .verdict .r.bad em{color:var(--bad)}
+  .verdict .note{font-size:12px;color:var(--ink-2);line-height:1.5;max-width:48ch}
+  .actions{display:flex;flex-direction:column;gap:4px}
+  .actions button{font-size:10px;padding:5px 9px;border:1px solid var(--rule-2);border-radius:5px;color:var(--ink-2);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+  .actions button:hover{background:var(--bg-3);color:var(--ink)}
+
+  .checks-log{border:1px solid var(--rule);border-radius:0 0 10px 10px;background:var(--bg-3);padding:12px 16px;font-size:12.5px;line-height:1.9}
+  .checks-log .line{display:grid;grid-template-columns:80px 16px 1fr auto;gap:12px;align-items:baseline;color:var(--ink-2)}
+  .checks-log .line .ts{color:var(--ink-4);font-size:11px}
+  .checks-log .line .sym{color:var(--ok);font-weight:700}
+  .checks-log .line.warn .sym{color:var(--warn)}
+  .checks-log .line.bad .sym{color:var(--bad)}
+  .checks-log .line .v{color:var(--ink-3);font-size:11px}
+
+  /* ─── monitor feed (canary's watch) ─── */
+  .monitor{padding:40px 0;border-bottom:1px solid var(--rule)}
+  .monitor-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+  .monitor-head h2{font-family:'Inter',sans-serif;font-size:22px;font-weight:600;letter-spacing:-.015em;margin:0;color:var(--ink)}
+  .monitor-head .status{font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+  .monitor-head .status b.ok{color:var(--ok);font-weight:600}
+  .monitor-head .status b.warn{color:var(--warn);font-weight:600}
+  .monitor-head .tabs{display:flex;gap:16px;font-size:12px}
+  .monitor-head .tabs button{color:var(--ink-3);letter-spacing:.04em;padding:2px 0;border-bottom:1px solid transparent}
+  .monitor-head .tabs button.on{color:var(--ink);border-bottom-color:var(--primary)}
+  .monitor-head .tabs button .count{color:var(--ink-4);font-size:11px;margin-left:4px}
+
+  .endpoints{border:1px solid var(--rule);border-radius:10px;background:var(--card);overflow:hidden}
+  .ep-hd{display:grid;grid-template-columns:90px 1fr 90px 80px 60px;padding:9px 16px;background:var(--bg-3);border-bottom:1px solid var(--rule);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-family:'Inter',sans-serif}
+  .ep-hd .r{text-align:right}
+  .ep{display:grid;grid-template-columns:90px 1fr 90px 80px 60px;padding:11px 16px;border-bottom:1px solid var(--rule);align-items:center;font-size:13px;cursor:pointer;transition:background .12s}
+  .ep:last-child{border-bottom:0}
+  .ep:hover{background:var(--bg-2)}
+  .ep .mth{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;width:42px;text-align:center;letter-spacing:.06em}
+  .ep .mth.get{background:color-mix(in oklab, var(--ok) 18%, var(--card));color:var(--ok)}
+  .ep .mth.post{background:color-mix(in oklab, var(--primary) 22%, var(--card));color:var(--primary-ink)}
+  html.dark .ep .mth.post{color:var(--primary)}
+  .ep .path{color:var(--ink);word-break:break-all;font-size:13px}
+  .ep .path small{color:var(--ink-3);font-size:11px;display:block;margin-top:1px}
+  .ep .st{font-size:11px;color:var(--ok);display:flex;align-items:center;gap:6px;letter-spacing:.04em;text-transform:uppercase}
+  .ep .st::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok)}
+  .ep .st.warn{color:var(--warn)}
+  .ep .st.warn::before{background:var(--warn)}
+  .ep .st.bad{color:var(--bad)}
+  .ep .st.bad::before{background:var(--bad)}
+  .ep .lat{font-size:12px;color:var(--ink-2);text-align:right}
+  .ep .score{font-size:12px;color:var(--ink);text-align:right;font-weight:600}
+
+  /* ─── API ─── */
+  .section{padding:40px 0;border-bottom:1px solid var(--rule)}
+  .section h2{font-family:'Inter',sans-serif;font-size:22px;font-weight:600;letter-spacing:-.015em;margin:0 0 16px;color:var(--ink)}
+  .api{border:1px solid var(--rule);border-radius:10px;background:var(--card);overflow:hidden}
+  .api-row{display:grid;grid-template-columns:60px 1fr;gap:16px;padding:14px 18px;border-bottom:1px solid var(--rule);align-items:start}
+  .api-row:last-child{border-bottom:0}
+  .api-row .mth{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;text-align:center;letter-spacing:.06em;align-self:start;margin-top:1px}
+  .api-row .mth.get{background:color-mix(in oklab, var(--ok) 18%, var(--card));color:var(--ok)}
+  .api-row .mth.post{background:color-mix(in oklab, var(--primary) 22%, var(--card));color:var(--primary-ink)}
+  html.dark .api-row .mth.post{color:var(--primary)}
+  .api-row .path{font-size:13px;color:var(--ink);margin-bottom:4px;word-break:break-all}
+  .api-row p{font-size:13px;color:var(--ink-2);margin:0;line-height:1.55}
+
+  .code-wrap{border:1px solid var(--rule);border-radius:10px;background:var(--card);overflow:hidden;margin-top:16px}
+  .code-head{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--rule);background:var(--bg-3);font-size:11px;color:var(--ink-3);letter-spacing:.04em;font-family:'JetBrains Mono',monospace}
+  .code-copy{font-size:10px;padding:3px 8px;border:1px solid var(--rule-2);border-radius:4px;color:var(--ink-2);letter-spacing:.06em;text-transform:uppercase}
+  pre.code{margin:0;padding:16px 18px;font-size:12.5px;line-height:1.65;color:var(--ink);overflow-x:auto;font-family:'JetBrains Mono',monospace}
+  .tok-k{color:var(--primary);font-weight:600}
+  .tok-s{color:var(--warn)}
+  .tok-c{color:var(--ink-3);font-style:italic}
+  .tok-f{color:#4a6fb5}
+  html.dark .tok-f{color:#8ba8db}
+
+  footer{padding:24px;max-width:1080px;margin:0 auto;font-size:12px;color:var(--ink-3);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  footer a{color:var(--ink-2);text-decoration:none}
+  footer a:hover{color:var(--ink)}
+
+  @media (max-width:760px){
+    main{padding:0 18px}
+    .hero{grid-template-columns:1fr;padding:36px 0 24px}
+    .hero h1{font-size:38px}
+    .pulse-card{width:100%}
+    .report-top{grid-template-columns:auto 1fr;gap:12px}
+    .actions{grid-column:1/-1;flex-direction:row}
+    .ep-hd,.ep{grid-template-columns:60px 1fr 70px;font-size:12px}
+    .ep-hd .c-lat,.ep-hd .c-score,.ep .lat,.ep .score{display:none}
+    .method-tabs button{padding:5px 9px}
+    .url-bar .run{padding:0 16px;min-width:auto}
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>x402 canary</h1>
-    <div class="meta">pre-flight checks for the agent economy</div>
-  </header>
 
-  <div class="summary-bar">
-    <div class="stat">
-      <span class="stat-label">Endpoints</span>
-      <span class="stat-value" id="stat-total">--</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Online</span>
-      <span class="stat-value" id="stat-up">--</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Degraded</span>
-      <span class="stat-value" id="stat-down">--</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">x402 Enabled</span>
-      <span class="stat-value x402-color" id="stat-x402">--</span>
-    </div>
+<div class="topbar">
+  <div class="left">
+    <span class="live-dot"></span>
+    <span>canary <b>alive</b> &nbsp;·&nbsp; <b id="tb-online">--</b> online &nbsp;·&nbsp; last probe <b id="tb-age">--</b> ago</span>
   </div>
-
-  <div class="preflight">
-    <div class="preflight-label">Pre-flight Check</div>
-    <div class="preflight-form">
-      <input type="text" id="preflight-url" class="preflight-input" placeholder="https://your-endpoint.com/api/..." />
-      <select id="preflight-method" class="preflight-select">
-        <option value="GET">GET</option>
-        <option value="POST">POST</option>
-      </select>
-      <button class="preflight-btn" onclick="runPreflight()">Run</button>
-    </div>
-    <div id="preflight-report"></div>
+  <div class="right">
+    <a href="#monitor">monitor</a>
+    <a href="#api">api</a>
+    <a href="/llms.txt">llms.txt</a>
+    <button id="themeBtn" aria-label="Toggle theme">☾</button>
   </div>
+</div>
 
-  <div class="api-section">
-    <div class="api-label">agent integration</div>
-    <div class="api-desc">check any x402 endpoint before you pay. <a href="/llms.txt">llms.txt</a></div>
-    <div class="api-endpoints">
-      <div class="api-endpoint">
-        <div class="api-method">GET</div>
-        <code class="api-path">/api/trust?url={endpoint}</code>
-        <div class="api-note">quick trust score for agents -- returns recommendation before payment</div>
+<main>
+
+  <section class="hero">
+    <div>
+      <h1>canary <em>/</em> x402</h1>
+      <p class="sub">a pre-flight check for the agent economy. <b id="hero-total">--</b> endpoints watched, <b id="hero-degraded">--</b> degraded, <b id="hero-x402">--</b> x402-enabled. paste any endpoint below to check it before you pay.</p>
+    </div>
+    <div class="pulse-card">
+      <div class="pulse-chrome">
+        <span class="d r"></span><span class="d y"></span><span class="d g"></span>
+        <span class="title">canary-pulse</span>
       </div>
-      <div class="api-endpoint">
-        <div class="api-method">POST</div>
-        <code class="api-path">/api/preflight</code>
-        <div class="api-note">full spec compliance report with grading</div>
-      </div>
-      <div class="api-endpoint">
-        <div class="api-method">GET</div>
-        <code class="api-path">/api/health</code>
-        <div class="api-note">live status of all monitored endpoints</div>
+      <div class="pulse-body">
+        <div class="pulse-head">
+          <span><b>60s window</b></span>
+          <span class="live"><span class="live-dot"></span>live</span>
+        </div>
+        <svg class="pulse-svg" id="pulseSvg" viewBox="0 0 260 48" preserveAspectRatio="none"></svg>
+        <div class="pulse-foot">
+          <span><b id="pf-rate">62</b> checks/min</span>
+          <span>p50 <b id="pf-p50">118ms</b></span>
+        </div>
       </div>
     </div>
-    <details class="api-example-details">
-      <summary class="preflight-details-toggle">usage example</summary>
-      <pre class="preflight-json">const trust = await fetch(
-  "https://canary.0x402.sh/api/trust?url=" + encodeURIComponent(targetUrl)
+  </section>
+
+  <!-- TOOL -->
+  <section class="tool-section">
+    <div class="tool-head">
+      <div class="l"><b>pre-flight</b> · paste any x402 url</div>
+      <div class="method-tabs">
+        <button class="on" data-m="GET">GET</button>
+        <button data-m="POST">POST</button>
+      </div>
+    </div>
+    <div class="url-bar">
+      <div class="prompt">https://</div>
+      <input id="urlInput" placeholder="api.example.com/premium-endpoint" spellcheck="false">
+      <button class="run" id="runBtn"><span class="t">Check</span><span class="spin"></span></button>
+    </div>
+    <div class="chiprow" id="chiprow">
+      <span class="lbl">try</span>
+    </div>
+
+    <div class="report" id="report">
+      <div class="report-top">
+        <div class="ring" id="ring"><div class="n" id="ringN">82<small>trust</small></div></div>
+        <div class="verdict">
+          <div class="l">verdict</div>
+          <div class="r" id="verdictR"><em id="verdictTxt">safe-to-pay</em></div>
+          <div class="note" id="verdictNote">Spec-compliant. Signed 402 challenge, stable response shape, verified recipient.</div>
+        </div>
+        <div class="actions">
+          <button id="copyCurl">Copy cURL</button>
+          <button id="copyJson">Raw JSON</button>
+        </div>
+      </div>
+      <div class="checks-log" id="checksLog"></div>
+    </div>
+  </section>
+
+  <!-- MONITOR -->
+  <section class="monitor" id="monitor">
+    <div class="monitor-head">
+      <h2 class="sans">monitor</h2>
+      <div class="tabs">
+        <button class="on" data-filter="all">all<span class="count" id="cnt-all">--</span></button>
+        <button data-filter="ok">online<span class="count" id="cnt-ok">--</span></button>
+        <button data-filter="x402">x402<span class="count" id="cnt-x402">--</span></button>
+        <button data-filter="bad">offline<span class="count" id="cnt-bad">--</span></button>
+      </div>
+      <div class="status" id="monitor-status">loading…</div>
+    </div>
+
+    <div class="endpoints" id="endpoints">
+      <div class="ep-hd">
+        <span>method</span>
+        <span>endpoint</span>
+        <span>status</span>
+        <span class="r c-lat">latency</span>
+        <span class="r c-score">code</span>
+      </div>
+      <!-- rows injected -->
+    </div>
+  </section>
+
+  <!-- API -->
+  <section class="section" id="api">
+    <h2 class="sans">agent integration</h2>
+    <div class="api">
+      <div class="api-row">
+        <span class="mth get">GET</span>
+        <div><div class="path">/api/trust?url={endpoint}</div><p>Quick trust score for agents — returns a safe-to-pay recommendation before payment.</p></div>
+      </div>
+      <div class="api-row">
+        <span class="mth post">POST</span>
+        <div><div class="path">/api/preflight</div><p>Full spec-compliance report with letter grade and itemized check results.</p></div>
+      </div>
+      <div class="api-row">
+        <span class="mth get">GET</span>
+        <div><div class="path">/api/health</div><p>Live status of all monitored endpoints.</p></div>
+      </div>
+    </div>
+    <div class="code-wrap">
+      <div class="code-head"><span>example · javascript</span><button class="code-copy">copy</button></div>
+<pre class="code"><span class="tok-k">const</span> trust = <span class="tok-k">await</span> <span class="tok-f">fetch</span>(
+  <span class="tok-s">"https://canary.0x402.sh/api/trust?url="</span> + <span class="tok-f">encodeURIComponent</span>(targetUrl)
 );
-const { trustScore, recommendation } = await trust.json();
+<span class="tok-k">const</span> { trustScore, recommendation } = <span class="tok-k">await</span> trust.<span class="tok-f">json</span>();
 
-if (recommendation === "safe-to-pay") {
-  // proceed with x402 payment
+<span class="tok-k">if</span> (recommendation === <span class="tok-s">"safe-to-pay"</span>) {
+  <span class="tok-c">// proceed with x402 payment</span>
 }</pre>
-    </details>
-  </div>
+    </div>
+  </section>
 
-  <div id="content">
-    <div class="loading">Loading...</div>
-  </div>
+  <footer>
+    <div>built by <a href="https://x.com/tmoney_145">@tmoney_145</a></div>
+    <div>on <a href="https://bankr.bot/x402">bankr x402 cloud</a></div>
+    <div><a href="https://github.com/tyler-james-bridges/x402-canary">github</a> · <a href="https://0x402.sh">0x402.sh</a></div>
+  </footer>
+</main>
 
-  <div class="refresh-info">
-    <span>built by <a href="https://x.com/tmoney_145" target="_blank">@tmoney_145</a> / deployed on <a href="https://bankr.bot/x402" target="_blank">bankr x402 cloud</a> / <a href="https://github.com/tyler-james-bridges/x402-canary" target="_blank">github</a> / <a href="https://0x402.sh" target="_blank">0x402.sh</a></span>
-    <span id="last-updated">--</span>
-  </div>
+<script>
+  // ─── theme ───
+  const root = document.documentElement;
+  const themeBtn = document.getElementById('themeBtn');
+  const savedTheme = localStorage.getItem('canary-theme');
+  if (savedTheme === 'dark') { root.classList.add('dark'); themeBtn.textContent = '☀'; }
+  themeBtn.addEventListener('click',()=>{
+    root.classList.toggle('dark');
+    const dark = root.classList.contains('dark');
+    themeBtn.textContent = dark ? '☀' : '☾';
+    localStorage.setItem('canary-theme', dark ? 'dark' : 'light');
+  });
 
-  <script>
-    function fmt(ms) {
-      if (ms == null || ms === 0) return '--';
-      if (ms < 1000) return ms + 'ms';
-      return (ms / 1000).toFixed(1) + 's';
+  // ─── method tabs ───
+  let currentMethod = 'GET';
+  document.querySelectorAll('.method-tabs button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.method-tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    currentMethod = b.dataset.m;
+  }));
+
+  // ─── helpers ───
+  function fmtMs(ms){ if (ms == null || ms === 0) return '—'; if (ms < 1000) return ms + 'ms'; return (ms/1000).toFixed(2)+'s'; }
+  function stripProto(u){ return (u || '').replace(/^https?:\/\//,''); }
+  function pathLabel(u){
+    try { const x = new URL(u); return (x.host + x.pathname).replace(/\/$/,''); }
+    catch { return stripProto(u); }
+  }
+  function ensureProto(u){ return /^https?:\/\//.test(u) ? u : 'https://' + u; }
+
+  // ─── pulse (driven by real check latencies) ───
+  const svg = document.getElementById('pulseSvg');
+  let pulseData = Array.from({length:40},()=>24);
+  function pushPulse(latMs){
+    // map latency to y (4..44, inverted: faster = lower y = higher line)
+    const clamped = Math.max(20, Math.min(2000, latMs || 800));
+    // log scale: 20ms -> top, 2000ms -> bottom
+    const t = (Math.log(clamped) - Math.log(20)) / (Math.log(2000) - Math.log(20));
+    const y = 6 + t * 36;
+    pulseData.shift();
+    pulseData.push(y);
+    renderPulse();
+  }
+  function renderPulse(){
+    const w = 260;
+    const step = w / (pulseData.length-1);
+    const pts = pulseData.map((v,i)=>`${(i*step).toFixed(1)},${Math.max(4,Math.min(44,v)).toFixed(1)}`).join(' ');
+    const last = pulseData[pulseData.length-1];
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="pg" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="var(--primary)" stop-opacity=".35"/>
+          <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polyline points="${pts}" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <polygon points="0,48 ${pts} ${w},48" fill="url(#pg)"/>
+      <circle cx="${w-2}" cy="${last.toFixed(1)}" r="2.5" fill="var(--primary)"/>
+    `;
+  }
+  renderPulse();
+
+  // ─── monitor / health ───
+  let healthData = null;
+  let lastFetchAt = Date.now();
+  let currentFilter = 'all';
+  const epsEl = document.getElementById('endpoints');
+
+  function epStatus(ep){
+    if (!ep.isHealthy) return 'bad';
+    if (ep.isX402) return 'x402';
+    return 'ok';
+  }
+  function statusLabel(s, status){
+    if (s === 'bad') return status ? 'error ' + status : 'offline';
+    if (s === 'x402') return '402 paid';
+    return 'online';
+  }
+  // map x402 status visually onto the .st class system: x402 reuses ok colors but with primary-tinted dot via inline style
+  function renderEps(){
+    epsEl.querySelectorAll('.ep').forEach(n=>n.remove());
+    if (!healthData) return;
+    const rows = healthData.endpoints.filter(ep=>{
+      const s = epStatus(ep);
+      if (currentFilter === 'all') return true;
+      if (currentFilter === 'ok') return ep.isHealthy;
+      if (currentFilter === 'x402') return ep.isX402;
+      if (currentFilter === 'bad') return !ep.isHealthy;
+      return true;
+    });
+    rows.forEach(ep=>{
+      const s = epStatus(ep);
+      const el = document.createElement('div');
+      el.className = 'ep';
+      const stCls = s === 'bad' ? 'bad' : (s === 'x402' ? 'warn' : '');
+      el.innerHTML = `
+        <span class="mth ${(ep.method||'GET').toLowerCase()}">${ep.method||'GET'}</span>
+        <div class="path">${pathLabel(ep.url)}<small>${ep.name||''}${ep.description?' · '+ep.description:''}</small></div>
+        <span class="st ${stCls}">${statusLabel(s, ep.status)}</span>
+        <span class="lat">${fmtMs(ep.responseTimeMs)}</span>
+        <span class="score">${ep.status || '—'}</span>
+      `;
+      el.addEventListener('click',()=>{
+        document.getElementById('urlInput').value = stripProto(ep.url);
+        // sync method tabs to this endpoint
+        currentMethod = (ep.method || 'GET').toUpperCase();
+        document.querySelectorAll('.method-tabs button').forEach(x=>{
+          x.classList.toggle('on', x.dataset.m === currentMethod);
+        });
+        window.scrollTo({top:0,behavior:'smooth'});
+        setTimeout(()=>runCheck(),450);
+      });
+      epsEl.appendChild(el);
+    });
+  }
+
+  document.querySelectorAll('.monitor-head .tabs button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.monitor-head .tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    currentFilter = b.dataset.filter;
+    renderEps();
+  }));
+
+  function renderHero(){
+    if (!healthData) return;
+    const { total, online, degraded, x402Enabled } = healthData.summary;
+    document.getElementById('hero-total').textContent = total;
+    document.getElementById('hero-degraded').textContent = degraded;
+    document.getElementById('hero-x402').textContent = x402Enabled;
+    document.getElementById('tb-online').textContent = `${online}/${total}`;
+    document.getElementById('cnt-all').textContent = total;
+    document.getElementById('cnt-ok').textContent = online;
+    document.getElementById('cnt-x402').textContent = x402Enabled;
+    document.getElementById('cnt-bad').textContent = degraded;
+    const okN = online;
+    document.getElementById('monitor-status').innerHTML =
+      `refreshes every 30s · <b class="ok">●</b> ${okN} ok · <b class="warn">●</b> ${degraded} degraded`;
+    // pulse foot: rate (checks/min ~ total endpoints * 2) and p50
+    const lats = healthData.endpoints.map(e=>e.responseTimeMs).filter(Boolean).sort((a,b)=>a-b);
+    const p50 = lats.length ? lats[Math.floor(lats.length/2)] : null;
+    document.getElementById('pf-p50').textContent = p50 ? p50+'ms' : '—';
+    document.getElementById('pf-rate').textContent = total * 2;
+  }
+
+  function renderChips(){
+    if (!healthData) return;
+    const row = document.getElementById('chiprow');
+    row.querySelectorAll('.chip').forEach(n=>n.remove());
+    // pick 4: prefer x402, then healthy non-x402, then any
+    const eps = healthData.endpoints;
+    const x402 = eps.filter(e=>e.isX402);
+    const healthy = eps.filter(e=>e.isHealthy && !e.isX402);
+    const others = eps.filter(e=>!e.isHealthy);
+    const picks = [...x402, ...healthy, ...others].slice(0,4);
+    picks.forEach(ep=>{
+      const b = document.createElement('button');
+      b.className = 'chip' + (!ep.isHealthy ? ' bad' : '');
+      b.textContent = pathLabel(ep.url);
+      b.title = ep.name || '';
+      b.addEventListener('click',()=>{
+        document.getElementById('urlInput').value = stripProto(ep.url);
+        currentMethod = (ep.method || 'GET').toUpperCase();
+        document.querySelectorAll('.method-tabs button').forEach(x=>{
+          x.classList.toggle('on', x.dataset.m === currentMethod);
+        });
+        runCheck();
+      });
+      row.appendChild(b);
+    });
+  }
+
+  async function fetchHealth(){
+    try {
+      const res = await fetch('/api/health');
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      healthData = await res.json();
+      lastFetchAt = Date.now();
+      renderHero();
+      renderEps();
+      renderChips();
+      // push real avg latency to pulse
+      const lats = healthData.endpoints.map(e=>e.responseTimeMs).filter(Boolean);
+      const avg = lats.length ? lats.reduce((a,b)=>a+b,0)/lats.length : 200;
+      pushPulse(avg);
+    } catch(err){
+      // dev preview / no API: load demo data so the UI still renders
+      healthData = DEMO_HEALTH;
+      lastFetchAt = Date.now();
+      renderHero();
+      renderEps();
+      renderChips();
+      pushPulse(180);
+      document.getElementById('monitor-status').innerHTML =
+        '<span style="color:var(--warn)">demo data — /api/health unreachable (' + err.message + ')</span>';
     }
+  }
 
-    function badgeClass(ep) {
-      if (!ep.lastChecked && !ep.timestamp) return 'unknown';
-      return ep.isHealthy ? 'up' : 'down';
-    }
+  // demo fallback so the page renders without a backend (local file preview)
+  const DEMO_HEALTH = {
+    timestamp: new Date().toISOString(),
+    summary: { total: 8, online: 6, degraded: 2, x402Enabled: 5 },
+    endpoints: [
+      { name:'Bankr x402 Lint', method:'POST', url:'https://x402.bankr.bot/0x72e4…/lint', status:402, responseTimeMs:118, isHealthy:true, isX402:true, description:'x402 compliance linter' },
+      { name:'LITCOIN Chat', method:'POST', url:'https://x402.bankr.bot/0xcea8…/chat', status:402, responseTimeMs:204, isHealthy:true, isX402:true, description:'OpenAI-compat LLM via x402' },
+      { name:'DeFi Yield Compare', method:'GET', url:'https://x402.bankr.bot/0xfa04…/yield-compare', status:402, responseTimeMs:312, isHealthy:true, isX402:true, description:'best DeFi yields ranked by APY' },
+      { name:'x402scan Resources', method:'GET', url:'https://www.x402scan.com/api/x402/resources', status:200, responseTimeMs:94, isHealthy:true, isX402:false, description:'all indexed x402 resources' },
+      { name:'StableEnrich Exa Search', method:'POST', url:'https://stableenrich.dev/api/exa/search', status:402, responseTimeMs:178, isHealthy:true, isX402:true, description:'neural search via Exa' },
+      { name:'AFK Assembly Intel', method:'GET', url:'https://afkonchain.xyz/api/assembly/intel', status:200, responseTimeMs:162, isHealthy:true, isX402:false, description:'AI Assembly Council data' },
+      { name:'StableSocial TikTok Profile', method:'POST', url:'https://stablesocial.dev/api/tiktok/profile', status:0, responseTimeMs:0, isHealthy:false, isX402:false, description:'TikTok user profile' },
+      { name:'dTelecom x402', method:'POST', url:'https://x402.dtelecom.org/v1/credits/purchase', status:502, responseTimeMs:840, isHealthy:false, isX402:false, description:'WebRTC for AI agents' },
+    ],
+  };
 
-    function badgeText(ep) {
-      if (!ep.lastChecked && !ep.timestamp) return 'PENDING';
-      var s = ep.lastStatus || ep.status || 0;
-      return ep.isHealthy ? 'UP (' + s + ')' : 'DOWN';
-    }
+  // age ticker
+  setInterval(()=>{
+    const sec = Math.floor((Date.now() - lastFetchAt)/1000);
+    document.getElementById('tb-age').textContent = sec + 's';
+  }, 1000);
 
-    function renderX402Info(details) {
-      if (!details) return '';
+  // pulse rolls forward continuously even between fetches, using small jitter on last value
+  setInterval(()=>{
+    if (!healthData) return;
+    const last = pulseData[pulseData.length-1];
+    const jittered = last + (Math.random()*4 - 2);
+    pulseData.shift();
+    pulseData.push(Math.max(4, Math.min(44, jittered)));
+    renderPulse();
+  }, 1500);
 
-      // Handle both Vercel shape (price/network/token) and local shape (price/network/assetSymbol)
-      const price = details.price || null;
-      const network = details.network || null;
-      const payTo = details.payTo || null;
+  fetchHealth();
+  setInterval(fetchHealth, 30_000);
 
-      const field = (label, val) =>
-        `<div class="x402-field">
-          <div class="x402-label">${label}</div>
-          <div class="x402-value ${val ? '' : 'null'}">${val || 'N/A'}</div>
-        </div>`;
+  // ─── pre-flight ───
+  const CHECK_LABELS = {
+    returns402: '402 status',
+    hasPaymentRequiredHeader: 'payment-required header',
+    headerIsValidBase64Json: 'valid base64 json',
+    hasX402Version: 'x402Version present',
+    hasAcceptsArray: 'accepts is array',
+    acceptsNotEmpty: 'accepts non-empty',
+    schemeValid: 'scheme valid',
+    networkValid: 'network valid',
+    amountPresent: 'amount present',
+    amountFormat: 'amount format',
+    assetPresent: 'asset present',
+    payToPresent: 'payTo present',
+    payToIsAddress: 'payTo is address',
+    maxTimeoutSecondsPresent: 'maxTimeoutSeconds set',
+  };
 
-      const shortAddr = payTo ? payTo.slice(0, 6) + '...' + payTo.slice(-4) : null;
+  function recommendationFromGrade(grade){
+    if (!grade) return { txt:'unknown', cls:'warn', note:'No grade returned.' };
+    const g = grade.charAt(0);
+    if (g === 'A') return { txt:'safe-to-pay', cls:'', note:'Spec-compliant. All critical checks passed.' };
+    if (g === 'B') return { txt:'safe-to-pay', cls:'', note:'Mostly compliant with minor gaps. Review issues before automated payment.' };
+    if (g === 'C') return { txt:'proceed-with-caution', cls:'warn', note:'Several spec checks failed. Endpoint may work but expect inconsistencies.' };
+    if (g === 'D') return { txt:'proceed-with-caution', cls:'warn', note:'Multiple violations. Manual verification recommended.' };
+    return { txt:'do-not-pay', cls:'bad', note:'Endpoint failed spec compliance. Do not submit payment.' };
+  }
 
-      return `<div class="x402-info">
-        ${field('Price', price)}
-        ${field('Network', network)}
-        ${field('Pay To', shortAddr)}
-      </div>`;
-    }
+  function stamp(i){
+    const d = new Date(Date.now() - (i*180));
+    return d.toTimeString().slice(0,8);
+  }
 
-    function renderCard(ep) {
-      const bc = badgeClass(ep);
-      const cardClass = ['card', bc === 'down' ? 'down' : '', ep.isX402 ? 'x402' : ''].filter(Boolean).join(' ');
+  function renderReport(data){
+    const score = (data.checks && data.checks.specCompliance && data.checks.specCompliance.score) ?? 0;
+    const grade = data.grade || '?';
+    const details = (data.checks && data.checks.specCompliance && data.checks.specCompliance.details) || {};
+    const perf = (data.checks && data.checks.performance) || {};
+    const pricing = (data.checks && data.checks.pricing) || null;
+    const issues = details.issues || [];
 
+    const verdict = recommendationFromGrade(grade);
+    const col = verdict.cls === 'bad' ? 'var(--bad)' : verdict.cls === 'warn' ? 'var(--warn)' : 'var(--primary)';
+    document.getElementById('ring').style.background =
+      `conic-gradient(${col} 0 ${score}%, var(--rule-2) ${score}% 100%)`;
+    document.getElementById('ringN').innerHTML = `${grade}<small>${score}</small>`;
+
+    document.getElementById('verdictTxt').textContent = verdict.txt;
+    document.getElementById('verdictR').className = 'r ' + verdict.cls;
+
+    let note = verdict.note;
+    if (perf.responseTimeMs) note += ` Response ${perf.responseTimeMs}ms (${perf.benchmark||'—'}).`;
+    if (pricing && pricing.price) note += ` Price ${pricing.price} on ${pricing.network} — ${pricing.note||pricing.position||''}.`;
+    if (data.error) note = data.error;
+    document.getElementById('verdictNote').textContent = note;
+
+    // build check log: pass first then fails for rhythm
+    const keys = Object.keys(CHECK_LABELS).filter(k => k in details);
+    const log = document.getElementById('checksLog');
+    log.innerHTML = keys.map((k,i)=>{
+      const passed = details[k];
+      const cls = passed ? '' : (issues.find(s=>s.toLowerCase().includes(k.toLowerCase().slice(0,6))) ? 'bad' : 'warn');
+      const sym = passed ? '✓' : (cls === 'bad' ? '✗' : '!');
+      const v = passed ? 'pass' : 'fail';
       return `
-        <div class="${cardClass}">
-          <div class="card-header">
-            <div class="card-name">${ep.name || ep.url}</div>
-            <div class="badges">
-              <div class="badge ${bc}">${badgeText(ep)}</div>
-              ${ep.isX402 ? '<div class="badge x402-badge">x402</div>' : ''}
-            </div>
-          </div>
-          <div class="card-desc">${ep.description || ''}</div>
-          <div class="card-url">${ep.url}</div>
-          ${ep.isX402 ? renderX402Info(ep.x402Details) : ''}
-          <div class="card-metrics">
-            <div class="metric">
-              <div class="metric-label">Response</div>
-              <div class="metric-value">${fmt(ep.responseTimeMs || ep.avgResponseTimeMs)}</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Uptime</div>
-              <div class="metric-value">${ep.uptimePct != null ? ep.uptimePct + '%' : '--'}</div>
-            </div>
-          </div>
-          ${ep.isX402 ? '<button class="card-check-btn" onclick="checkEndpoint(\'' + ep.url + '\',\'' + (ep.method || 'GET') + '\')">pre-flight</button>' : ''}
+        <div class="line ${passed?'':cls||'bad'}">
+          <span class="ts">${stamp(keys.length-i)}</span>
+          <span class="sym">${sym}</span>
+          <span>${CHECK_LABELS[k]}</span>
+          <span class="v">${v}</span>
         </div>
       `;
+    }).join('');
+
+    document.getElementById('report').classList.add('show');
+    lastResultJson = data;
+  }
+
+  let lastResultJson = null;
+
+  async function runCheck(){
+    const btn = document.getElementById('runBtn');
+    let url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    url = ensureProto(url);
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/preflight', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ url, method: currentMethod }),
+      });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      renderReport(data);
+    } catch(err){
+      lastResultJson = { error: err.message };
+      document.getElementById('ring').style.background = `conic-gradient(var(--bad) 0 100%, var(--rule-2) 0)`;
+      document.getElementById('ringN').innerHTML = `!<small>error</small>`;
+      document.getElementById('verdictTxt').textContent = 'check-failed';
+      document.getElementById('verdictR').className = 'r bad';
+      document.getElementById('verdictNote').textContent = 'Pre-flight request failed: ' + err.message;
+      document.getElementById('checksLog').innerHTML = '';
+      document.getElementById('report').classList.add('show');
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
     }
+  }
 
-    let refreshTimer;
+  document.getElementById('runBtn').addEventListener('click', runCheck);
+  document.getElementById('urlInput').addEventListener('keydown',(e)=>{ if(e.key==='Enter') runCheck(); });
 
-    async function fetchAndRender() {
-      try {
-        const res = await fetch('/api/health');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const eps = data.endpoints;
-
-        const { total, online: up, degraded: down, x402Enabled: x402Count } = data.summary;
-
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-up').textContent = `${up}/${total}`;
-        document.getElementById('stat-down').textContent = down;
-        document.getElementById('stat-x402').textContent = `${x402Count}/${total}`;
-
-        document.getElementById('content').innerHTML =
-          `<div class="endpoints">${eps.map(renderCard).join('')}</div>`;
-
-        const ts = new Date(data.timestamp);
-        document.getElementById('last-updated').textContent =
-          'Last updated: ' + ts.toLocaleTimeString();
-      } catch (err) {
-        document.getElementById('content').innerHTML =
-          `<div class="error-msg">Failed to load: ${err.message}</div>`;
-      }
-    }
-
-    function scheduleRefresh() {
-      clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => {
-        fetchAndRender().then(scheduleRefresh);
-      }, 30_000);
-    }
-
-    // Pre-flight check
-    function checkEndpoint(url, method) {
-      document.getElementById('preflight-url').value = url;
-      document.getElementById('preflight-method').value = method || 'GET';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      runPreflight();
-    }
-
-    document.getElementById('preflight-url').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') runPreflight();
-    });
-
-    function highlightJson(obj) {
-      var raw = JSON.stringify(obj, null, 2);
-      return raw.replace(/("(?:[^"\\]|\\.)*")\s*:/g, '<span class="json-key">$1</span>:')
-        .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="json-string">$1</span>')
-        .replace(/:\s*(\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-        .replace(/:\s*(true|false)/g, ': <span class="json-bool">$1</span>')
-        .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>');
-    }
-
-    function gradeColor(grade) {
-      if (!grade) return '#666';
-      var g = grade.charAt(0).toUpperCase();
-      if (g === 'A') return '#00ff94';
-      if (g === 'B') return '#a78bfa';
-      if (g === 'C') return '#e2a727';
-      return '#ff4444';
-    }
-
-    async function runPreflight() {
-      var url = document.getElementById('preflight-url').value.trim();
-      var method = document.getElementById('preflight-method').value;
-      var report = document.getElementById('preflight-report');
-
-      if (!url) {
-        report.className = 'visible';
-        report.innerHTML = '<div class="preflight-error">Enter a URL to check</div>';
-        return;
-      }
-
-      report.className = 'visible loading';
-      report.innerHTML = '<div class="preflight-loading">Running pre-flight...</div>';
-
-      try {
-        var res = await fetch('/api/preflight', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: url, method: method })
-        });
-
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        var data = await res.json();
-
-        report.className = 'visible';
-        report.innerHTML = renderPreflightReport(data, url);
-      } catch (err) {
-        report.className = 'visible';
-        report.innerHTML = '<div class="preflight-error">Check failed: ' + err.message + '</div>';
-      }
-    }
-
-    function renderPreflightReport(data, url) {
-      var grade = data.grade || '?';
-      var spec = (data.checks && data.checks.specCompliance) || {};
-      var details = spec.details || {};
-      var perf = (data.checks && data.checks.performance) || {};
-      var pricing = (data.checks && data.checks.pricing) || null;
-      var issues = details.issues || [];
-
-      var checkLabels = {
-        returns402: '402 status',
-        hasPaymentRequiredHeader: 'payment header',
-        headerIsValidBase64Json: 'valid base64 json',
-        hasX402Version: 'x402 version',
-        hasAcceptsArray: 'accepts array',
-        acceptsNotEmpty: 'accepts not empty',
-        schemeValid: 'scheme',
-        networkValid: 'network',
-        amountPresent: 'amount',
-        amountFormat: 'amount format',
-        assetPresent: 'asset',
-        payToPresent: 'payTo',
-        payToIsAddress: 'payTo is address',
-        maxTimeoutSecondsPresent: 'timeout'
-      };
-      var checkKeys = Object.keys(details).filter(function(k) { return k !== 'issues'; });
-      var checksHtml = checkKeys.map(function(name) {
-        var passed = details[name];
-        var color = passed ? '#00ff94' : '#ff4444';
-        var label = passed ? 'PASS' : 'FAIL';
-        return '<div class="preflight-check">' +
-          '<span class="preflight-check-name">' + (checkLabels[name] || name) + '</span>' +
-          '<span class="preflight-check-result" style="color:' + color + '">' + label + '</span>' +
-          '</div>';
-      }).join('');
-
-      var metricField = function(label, value) {
-        return '<div class="preflight-metric">' +
-          '<div class="preflight-metric-label">' + label + '</div>' +
-          '<div class="preflight-metric-value">' + (value != null ? value : '--') + '</div>' +
-          '</div>';
-      };
-
-      var metricsHtml = '<div class="preflight-metrics">' +
-        metricField('Response', perf.responseTimeMs ? perf.responseTimeMs + 'ms' : '--') +
-        metricField('Benchmark', perf.benchmark || '--') +
-        metricField('Price', pricing ? pricing.price : '--') +
-        metricField('Price Position', pricing ? pricing.position : '--') +
-        metricField('Score', spec.score != null ? spec.score + '/100' : '--') +
-        '</div>';
-
-      var issuesHtml = '';
-      if (issues.length > 0) {
-        issuesHtml = '<ul class="preflight-issues">' +
-          issues.map(function(i) { return '<li>' + i + '</li>'; }).join('') +
-          '</ul>';
-      }
-
-      var passCount = checkKeys.filter(function(k) { return details[k]; }).length;
-      var totalCount = checkKeys.length;
-      var allPassed = passCount === totalCount;
-
-      // Sequential status log like a CI pipeline
-      var statusLines = checkKeys.map(function(name) {
-        var passed = details[name];
-        var icon = passed ? '<span style="color:#00ff94">ok</span>' : '<span style="color:#ff4444">fail</span>';
-        return '<div class="run-line">' + icon + ' <span class="run-check-name">' + (checkLabels[name] || name) + '</span></div>';
-      }).join('');
-
-      var summaryColor = allPassed ? '#00ff94' : (passCount > totalCount / 2 ? '#e2a727' : '#ff4444');
-      var summaryText = allPassed ? 'all checks passed' : passCount + '/' + totalCount + ' checks passed';
-
-      return '<div class="preflight-header">' +
-        '<div class="preflight-grade" style="color:' + gradeColor(grade) + '">' + grade + '</div>' +
-        '<div class="preflight-url">' + url + '</div>' +
-        '</div>' +
-        '<div class="run-log">' + statusLines +
-        '<div class="run-summary" style="color:' + summaryColor + '">' + summaryText + '</div>' +
-        '</div>' +
-        metricsHtml +
-        issuesHtml +
-        '<details class="preflight-details">' +
-        '<summary class="preflight-details-toggle">api response</summary>' +
-        '<pre class="preflight-json">' + highlightJson(data) + '</pre>' +
-        '</details>';
-    }
-
-    fetchAndRender().then(scheduleRefresh);
-  </script>
+  document.getElementById('copyCurl').addEventListener('click',(e)=>{
+    let url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    url = ensureProto(url);
+    const cmd = `curl "${location.origin}/api/trust?url=${encodeURIComponent(url)}"`;
+    navigator.clipboard?.writeText(cmd);
+    e.target.textContent = 'Copied ✓';
+    setTimeout(()=>e.target.textContent='Copy cURL',1200);
+  });
+  document.getElementById('copyJson').addEventListener('click',()=>{
+    let url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    url = ensureProto(url);
+    window.open(`/api/trust?url=${encodeURIComponent(url)}&method=${currentMethod}`, '_blank');
+  });
+</script>
 </body>
 </html>
