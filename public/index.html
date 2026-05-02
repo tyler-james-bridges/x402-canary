@@ -47,7 +47,7 @@
     --bad:#d86a52;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.55}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.55;overflow-x:hidden}
   .mono,pre,code,.url-bar input,.url-bar .prompt,.checks-log,.ep .path,.api-row .path,.chip{font-family:'JetBrains Mono',ui-monospace,monospace}
   a{color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule-2)}
   a:hover{color:var(--ink);text-decoration-color:var(--primary)}
@@ -124,7 +124,7 @@
 
   .chiprow{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--ink-3)}
   .chiprow .lbl{letter-spacing:.06em;text-transform:uppercase;margin-right:4px;font-family:'Inter',sans-serif}
-  .chip{font-size:12px;padding:4px 10px;border:1px solid var(--rule-2);border-radius:999px;background:var(--card);color:var(--ink-2)}
+  .chip{font-size:12px;padding:4px 10px;border:1px solid var(--rule-2);border-radius:999px;background:var(--card);color:var(--ink-2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .chip:hover{color:var(--ink);border-color:var(--ink-3)}
   .chip.warn{color:var(--warn)}
   .chip.bad{color:var(--bad)}
@@ -525,8 +525,8 @@
     picks.forEach(ep=>{
       const b = document.createElement('button');
       b.className = 'chip' + (!ep.isHealthy ? ' bad' : '');
-      b.textContent = pathLabel(ep.url);
-      b.title = ep.name || '';
+      b.textContent = ep.name || pathLabel(ep.url);
+      b.title = pathLabel(ep.url);
       b.addEventListener('click',()=>{
         document.getElementById('urlInput').value = stripProto(ep.url);
         currentMethod = (ep.method || 'GET').toUpperCase();
