@@ -1,11 +1,17 @@
 {
   "name": "x402-canary",
   "version": "1.0.0",
-  "description": "Canary network monitor for x402 agent economy endpoints",
+  "description": "Contract-defined x402 acceptance verifier with public outbound probing disabled",
   "main": "src/index.ts",
   "scripts": {
     "dev": "npx tsx src/index.ts",
-    "start": "npx tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "verify": "tsx src/verify.ts",
+    "test": "tsx --test src/__tests__/*.test.ts",
+    "test:containment": "tsx --test src/__tests__/public-containment.test.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\"",
+    "build": "npm run clean && tsc"
   },
   "keywords": [],
   "author": "tjb",

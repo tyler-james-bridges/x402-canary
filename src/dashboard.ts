@@ -1,154 +1,114 @@
-import http from "http";
-import fs from "fs";
-import path from "path";
-import { getAllMetrics, getX402Summary } from "./metrics.js";
-import { endpoints } from "./endpoints.js";
-import { checkEndpoint } from "./canary.js";
+import fs from "node:fs";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
+import path from "node:path";
 
-const PORT = 3402;
+const DEFAULT_PORT = 3402;
+const DASHBOARD_HOST = "127.0.0.1";
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 
-const nameMap = Object.fromEntries(endpoints.map((e) => [e.url, e.name]));
+const CONTAINMENT_STATUS = {
+  service: "x402-canary",
+  status: "contained",
+  publicOutboundMonitoring: false,
+  publicProbeRoutes: "disabled",
+  outboundRequestsMade: 0,
+} as const;
 
-function jsonResponse(res: http.ServerResponse, data: unknown): void {
-  res.writeHead(200, {
+const DISABLED_RESPONSE = {
+  error: {
+    code: "PUBLIC_PROBE_DISABLED",
+    message: "Caller-selected outbound checks are disabled. No target request was made.",
+  },
+  status: "gone",
+  outboundRequestsMade: 0,
+} as const;
+
+function jsonResponse(res: http.ServerResponse, status: number, data: unknown): void {
+  res.writeHead(status, {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "no-store",
   });
   res.end(JSON.stringify(data, null, 2));
 }
 
-export function startDashboard(): void {
-  const server = http.createServer((req, res) => {
-    const url = req.url ?? "/";
+function serveFile(
+  res: http.ServerResponse,
+  fileName: "index.html" | "llms.txt",
+  contentType: string,
+): void {
+  try {
+    const source = fs.readFileSync(path.join(PUBLIC_DIR, fileName), "utf8");
+    res.writeHead(200, { "Content-Type": contentType });
+    res.end(source);
+  } catch {
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Could not load local containment page");
+  }
+}
 
-    if (url === "/api/health" && req.method === "GET") {
-      const metrics = getAllMetrics(endpoints.map((e) => e.url));
-      const payload = metrics.map((m) => {
-        const endpoint = endpoints.find((e) => e.url === m.url);
-        return {
-          ...m,
-          name: endpoint?.name,
-          method: endpoint?.method,
-          description: endpoint?.description,
-          expectedPrice: endpoint?.expectedPrice,
-        };
-      });
-      const online = payload.filter((p) => p.isHealthy).length;
-      const x402Enabled = payload.filter((p) => p.isX402).length;
-      jsonResponse(res, {
-        timestamp: new Date().toISOString(),
-        summary: { total: payload.length, online, degraded: payload.length - online, x402Enabled },
-        endpoints: payload,
-      });
-      return;
-    }
+export function createDashboardServer(): http.Server {
+  return http.createServer((req, res) => {
+    const requestUrl = new URL(req.url ?? "/", "http://127.0.0.1");
+    const route = requestUrl.pathname;
 
-    if (url === "/api/x402-summary" && req.method === "GET") {
-      const summary = getX402Summary(
-        endpoints.map((e) => e.url),
-        nameMap
-      );
-      jsonResponse(res, { ...summary, generatedAt: new Date().toISOString() });
-      return;
-    }
-
-    if (url === "/api/preflight" && req.method === "POST") {
-      let body = "";
-      req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
-      req.on("end", async () => {
-        try {
-          const { url: targetUrl, method: targetMethod } = JSON.parse(body);
-          if (!targetUrl) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "Missing required field: url" }));
-            return;
-          }
-          const result = await checkEndpoint(targetUrl, targetMethod || "GET");
-          // Minimal preflight response for local testing
-          const isSpec = result.isX402;
-          jsonResponse(res, {
-            grade: isSpec ? "A" : "F",
-            endpoint: targetUrl,
-            checks: {
-              specCompliance: {
-                score: isSpec ? 93 : 0,
-                grade: isSpec ? "A" : "F",
-                details: {
-                  returns402: result.status === 402,
-                  hasPaymentRequiredHeader: !!result.x402Details,
-                  headerIsValidBase64Json: !!result.x402Details,
-                  hasX402Version: !!result.x402Details?.version,
-                  hasAcceptsArray: (result.x402Details?.accepts?.length ?? 0) > 0,
-                  acceptsNotEmpty: (result.x402Details?.accepts?.length ?? 0) > 0,
-                  schemeValid: !!result.x402Details?.accepts?.[0]?.scheme,
-                  networkValid: !!result.x402Details?.accepts?.[0]?.network,
-                  amountPresent: !!result.x402Details?.accepts?.[0]?.amount,
-                  amountFormat: true,
-                  assetPresent: !!result.x402Details?.asset,
-                  payToPresent: !!result.x402Details?.payTo,
-                  payToIsAddress: !!result.x402Details?.payTo,
-                  maxTimeoutSecondsPresent: !!result.x402Details?.accepts?.[0]?.maxTimeoutSeconds,
-                  issues: isSpec ? [] : [`Expected HTTP 402, got ${result.status}`],
-                },
-              },
-              performance: {
-                responseTimeMs: result.responseTimeMs,
-                benchmark: result.responseTimeMs < 200 ? "fast" : result.responseTimeMs < 500 ? "normal" : "slow",
-                percentile: "local test",
-              },
-              pricing: result.x402Details ? {
-                price: result.x402Details.price,
-                priceRaw: result.x402Details.priceRaw,
-                network: result.x402Details.network,
-                asset: result.x402Details.assetSymbol || "USDC",
-                position: "at-median",
-                note: "Local test",
-              } : null,
-            },
-            timestamp: result.timestamp,
-          });
-        } catch {
-          res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Invalid request body" }));
-        }
-      });
-      return;
-    }
-
-    if (url === "/llms.txt" && req.method === "GET") {
-      const txtPath = path.join(PUBLIC_DIR, "llms.txt");
-      try {
-        const txt = fs.readFileSync(txtPath, "utf-8");
-        res.writeHead(200, { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" });
-        res.end(txt);
-      } catch {
-        res.writeHead(404);
-        res.end("Not found");
+    if (route === "/api/health" && (req.method === "GET" || req.method === "HEAD")) {
+      if (req.method === "HEAD") {
+        res.writeHead(200, { "Cache-Control": "no-store" });
+        res.end();
+      } else {
+        jsonResponse(res, 200, CONTAINMENT_STATUS);
       }
       return;
     }
 
-    if (url === "/" && req.method === "GET") {
-      const htmlPath = path.join(PUBLIC_DIR, "index.html");
-      try {
-        const html = fs.readFileSync(htmlPath, "utf-8");
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(html);
-      } catch {
-        res.writeHead(500);
-        res.end("Could not load dashboard");
-      }
+    if (
+      (route === "/api/preflight" || route === "/api/trust" || route === "/api/x402-summary") &&
+      req.method === "OPTIONS"
+    ) {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Cache-Control": "no-store",
+      });
+      res.end();
       return;
     }
 
-    res.writeHead(404);
+    if (route === "/api/preflight" || route === "/api/trust" || route === "/api/x402-summary") {
+      jsonResponse(res, 410, DISABLED_RESPONSE);
+      return;
+    }
+
+    if (route === "/llms.txt" && req.method === "GET") {
+      serveFile(res, "llms.txt", "text/plain; charset=utf-8");
+      return;
+    }
+
+    if (route === "/" && req.method === "GET") {
+      serveFile(res, "index.html", "text/html; charset=utf-8");
+      return;
+    }
+
+    res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
   });
+}
 
-  server.listen(PORT, () => {
-    console.log(`Dashboard:       http://localhost:${PORT}`);
-    console.log(`Health API:      http://localhost:${PORT}/api/health`);
-    console.log(`x402 Summary:    http://localhost:${PORT}/api/x402-summary`);
+export interface StartDashboardOptions {
+  port?: number;
+  log?: boolean;
+}
+
+export function startDashboard(options: StartDashboardOptions = {}): http.Server {
+  const server = createDashboardServer();
+  const port = options.port ?? DEFAULT_PORT;
+  server.listen(port, DASHBOARD_HOST, () => {
+    if (options.log === false) return;
+    const address = server.address() as AddressInfo;
+    console.log(`Contained dashboard: http://${DASHBOARD_HOST}:${address.port}`);
   });
+  return server;
 }

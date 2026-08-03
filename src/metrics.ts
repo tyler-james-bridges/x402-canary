@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { CheckResult, X402Details } from "./canary.js";
+import type { CheckResult, X402Details } from "./canary.js";
 
 const DATA_FILE = path.join(process.cwd(), "data", "metrics.json");
 const MAX_HISTORY = 500;
@@ -114,11 +114,15 @@ export function getX402Summary(
       url: m.url,
       name: names[m.url],
       x402Details: m.x402Details ?? {
-        price: null,
-        network: null,
-        token: null,
-        payTo: null,
         version: null,
+        price: null,
+        priceRaw: null,
+        network: null,
+        networkRaw: null,
+        asset: null,
+        assetSymbol: null,
+        payTo: null,
+        accepts: [],
       },
       lastChecked: m.lastChecked,
     })),

@@ -1,0 +1,233 @@
+[
+  {
+    "name": "transmitted authorization with unresolved settlement and effect",
+    "publicHttpStatus": 504,
+    "executionPhase": "post_authorization_unknown",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": true,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "pass",
+      "signingRejected": false,
+      "settlement": "unknown",
+      "settlementCount": 0,
+      "requiredFinalityReached": "unknown",
+      "deliveryContractApplicable": true,
+      "delivery": "unknown",
+      "effectContractApplicable": true,
+      "effect": "unknown",
+      "effectCount": 0
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "unknown",
+      "settlementAbsenceAuthoritative": "unknown",
+      "effectAbsenceAuthoritative": "unknown",
+      "idempotencyContractVerified": "unknown",
+      "sameKeyReplayCreatesNoNewSettlement": "unknown",
+      "sameKeyReplayCreatesNoNewEffect": "unknown"
+    },
+    "expected": {
+      "terminal": "settlement_unknown",
+      "sameAuthorizationReplaySafe": false,
+      "newAuthorizationSafe": false
+    }
+  },
+  {
+    "name": "late canonical settlement with response and effect still unknown",
+    "publicHttpStatus": 504,
+    "executionPhase": "settlement_reconciled",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": true,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "pass",
+      "signingRejected": false,
+      "settlement": "pass",
+      "settlementCount": 1,
+      "requiredFinalityReached": "pass",
+      "deliveryContractApplicable": true,
+      "delivery": "unknown",
+      "effectContractApplicable": true,
+      "effect": "unknown",
+      "effectCount": 0
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "fail",
+      "settlementAbsenceAuthoritative": "fail",
+      "effectAbsenceAuthoritative": "unknown",
+      "idempotencyContractVerified": "unknown",
+      "sameKeyReplayCreatesNoNewSettlement": "unknown",
+      "sameKeyReplayCreatesNoNewEffect": "unknown"
+    },
+    "expected": {
+      "terminal": "settled_delivery_unverified",
+      "sameAuthorizationReplaySafe": false,
+      "newAuthorizationSafe": false
+    }
+  },
+  {
+    "name": "effect committed before response loss",
+    "publicHttpStatus": 504,
+    "executionPhase": "effect_committed_response_lost",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": true,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "pass",
+      "signingRejected": false,
+      "settlement": "pass",
+      "settlementCount": 1,
+      "requiredFinalityReached": "pass",
+      "deliveryContractApplicable": true,
+      "delivery": "unknown",
+      "effectContractApplicable": true,
+      "effect": "pass",
+      "effectCount": 1
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "fail",
+      "settlementAbsenceAuthoritative": "fail",
+      "effectAbsenceAuthoritative": "fail",
+      "idempotencyContractVerified": "unknown",
+      "sameKeyReplayCreatesNoNewSettlement": "unknown",
+      "sameKeyReplayCreatesNoNewEffect": "unknown"
+    },
+    "expected": {
+      "terminal": "settled_delivery_unverified",
+      "sameAuthorizationReplaySafe": false,
+      "newAuthorizationSafe": false
+    }
+  },
+  {
+    "name": "pre-submission 502",
+    "publicHttpStatus": 502,
+    "executionPhase": "pre_authorization_gate",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": false,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "fail",
+      "signingRejected": false,
+      "settlement": "not_attempted",
+      "settlementCount": 0,
+      "requiredFinalityReached": "not_applicable",
+      "deliveryContractApplicable": true,
+      "delivery": "fail",
+      "effectContractApplicable": true,
+      "effect": "fail",
+      "effectCount": 0
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "not_applicable",
+      "settlementAbsenceAuthoritative": "pass",
+      "effectAbsenceAuthoritative": "pass",
+      "idempotencyContractVerified": "unknown",
+      "sameKeyReplayCreatesNoNewSettlement": "unknown",
+      "sameKeyReplayCreatesNoNewEffect": "unknown"
+    },
+    "expected": {
+      "terminal": "not_attempted",
+      "sameAuthorizationReplaySafe": false,
+      "newAuthorizationSafe": false
+    }
+  },
+  {
+    "name": "post-submission 502",
+    "publicHttpStatus": 502,
+    "executionPhase": "post_authorization_unknown",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": true,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "pass",
+      "signingRejected": false,
+      "settlement": "unknown",
+      "settlementCount": 0,
+      "requiredFinalityReached": "unknown",
+      "deliveryContractApplicable": true,
+      "delivery": "unknown",
+      "effectContractApplicable": true,
+      "effect": "unknown",
+      "effectCount": 0
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "unknown",
+      "settlementAbsenceAuthoritative": "unknown",
+      "effectAbsenceAuthoritative": "unknown",
+      "idempotencyContractVerified": "unknown",
+      "sameKeyReplayCreatesNoNewSettlement": "unknown",
+      "sameKeyReplayCreatesNoNewEffect": "unknown"
+    },
+    "expected": {
+      "terminal": "settlement_unknown",
+      "sameAuthorizationReplaySafe": false,
+      "newAuthorizationSafe": false
+    }
+  },
+  {
+    "name": "expired authorization with authoritative settlement and effect absence",
+    "publicHttpStatus": 504,
+    "executionPhase": "reconciliation_closed_zero",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": true,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "pass",
+      "signingRejected": false,
+      "settlement": "failed",
+      "settlementCount": 0,
+      "requiredFinalityReached": "not_applicable",
+      "deliveryContractApplicable": true,
+      "delivery": "fail",
+      "effectContractApplicable": true,
+      "effect": "fail",
+      "effectCount": 0
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "pass",
+      "settlementAbsenceAuthoritative": "pass",
+      "effectAbsenceAuthoritative": "pass",
+      "idempotencyContractVerified": "unknown",
+      "sameKeyReplayCreatesNoNewSettlement": "unknown",
+      "sameKeyReplayCreatesNoNewEffect": "unknown"
+    },
+    "expected": {
+      "terminal": "settlement_failed",
+      "sameAuthorizationReplaySafe": false,
+      "newAuthorizationSafe": true
+    }
+  },
+  {
+    "name": "concurrent identical-key replay produces one settlement and one effect",
+    "publicHttpStatus": 200,
+    "executionPhase": "completed",
+    "facts": {
+      "paymentAuthorized": true,
+      "preflightPassed": true,
+      "policyRejectedBeforeAuthorization": false,
+      "authorizationTransmitted": "pass",
+      "signingRejected": false,
+      "settlement": "pass",
+      "settlementCount": 1,
+      "requiredFinalityReached": "pass",
+      "deliveryContractApplicable": true,
+      "delivery": "pass",
+      "effectContractApplicable": true,
+      "effect": "pass",
+      "effectCount": 1
+    },
+    "retry": {
+      "priorAuthorizationUnusable": "fail",
+      "settlementAbsenceAuthoritative": "fail",
+      "effectAbsenceAuthoritative": "fail",
+      "idempotencyContractVerified": "pass",
+      "sameKeyReplayCreatesNoNewSettlement": "pass",
+      "sameKeyReplayCreatesNoNewEffect": "pass"
+    },
+    "expected": {
+      "terminal": "settled_delivered",
+      "sameAuthorizationReplaySafe": true,
+      "newAuthorizationSafe": false
+    }
+  }
+]

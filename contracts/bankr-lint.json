@@ -1,0 +1,25 @@
+{
+  "name": "Bankr x402 Lint",
+  "request": {
+    "url": "https://x402.bankr.bot/0x72e45a93491a6acfd02da6ceb71a903f3d3b6d08/lint",
+    "method": "POST",
+    "body": {
+      "url": "https://canary.0x402.sh/api/health"
+    },
+    "timeoutMs": 30000
+  },
+  "payment": {
+    "protocol": "x402",
+    "network": "base",
+    "scheme": "exact",
+    "networkId": "eip155:8453",
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "payTo": "0x8AEE621035D93Deb3C0C1177fac252dC2dd501a0",
+    "maxAmountAtomic": "10000",
+    "maxAmountUsd": 0.01
+  },
+  "corsOrigin": "https://canary.0x402.sh",
+  "delivery": {
+    "jsonPaths": ["ok", "grade", "score", "findings"]
+  }
+}

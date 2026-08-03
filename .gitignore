@@ -4,3 +4,6 @@ data/
 .env
 *.local
 .vercel
+.DS_Store
+.claude/worktrees/
+.claude/settings.local.json

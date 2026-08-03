@@ -1,72 +1,103 @@
 # x402-canary
 
-Canary monitor for the x402 agent economy. Polls a set of x402-enabled API endpoints every 30 seconds and serves a brutalist black/white dashboard at [canary.0x402.sh](https://canary.0x402.sh).
+Contract-defined acceptance verification for x402 paid paths, currently narrowed to Base mainnet, native USDC, x402 v2 `exact`, and EIP-3009-style requirements.
 
-## What it does
+## Current safety state
 
-- Checks each endpoint for HTTP status, response time, and x402 payment details
-- Parses the `payment-required` header (base64 JSON) to surface price, network, token, and scheme
-- Displays live status: UP, DOWN, or X402 (payment required but healthy)
-- Auto-refreshes every 30 seconds
+This branch is in source-containment and deterministic-fixture mode:
 
-## Stack
+- Public caller-selected outbound probes are disabled and return HTTP 410.
+- `/api/health` returns local containment status and makes no third-party requests.
+- `npm start` serves only the containment page on `127.0.0.1`; scheduled endpoint checks are disabled.
+- The source Bankr manifest advertises no paid services.
+- The CLI rejects `--pay` before loading a contract, and the executable AgentCash adapter is a fail-closed stub with no subprocess or wallet path.
+- Tests and CI make no production payment.
 
-- Vercel serverless function (`api/health.ts`) -- no persistence, each request is a fresh check
-- Static frontend (`public/index.html`) -- vanilla JS, no framework
-- TypeScript, Geist Mono, brutalist black/white design
+The source changes have not been deployed or independently verified on the live Vercel and Bankr surfaces. Do not describe the production service as contained until deployment, Bankr unpublish/disable, and post-deployment verification are complete.
 
-## Monitored endpoints
+## What is implemented
 
-Defined in `api/health.ts`. Current list:
+The no-spend verifier and fixtures evaluate objective predicates rather than a trust score or payment recommendation:
 
-| Name | URL |
-|---|---|
-| x402scan Merchants | https://www.x402scan.com/api/x402/merchants |
-| x402scan Resources | https://www.x402scan.com/api/x402/resources |
-| StableEnrich Exa Search | https://stableenrich.dev/api/exa/search |
-| StableEnrich Apollo People | https://stableenrich.dev/api/apollo/people-search |
-| AgentCash | https://agentcash.dev/api/send |
-| Base RPC | https://mainnet.base.org |
+- `returns_402`
+- `challenge_valid`
+- `browser_readable`
+- `preflight_valid`
+- `contract_compatible`
 
-## Adding an endpoint
+Contract compatibility requires one unambiguous requirement matching all of:
 
-Edit `api/health.ts` and add an entry to the `ENDPOINTS` array:
+- x402 version 2
+- the contracted HTTPS resource URL
+- Base mainnet (`eip155:8453`)
+- native Base USDC
+- `exact`
+- the pinned `payTo`
+- the atomic price ceiling and USD cap
+- an EIP-3009-compatible token domain, with Permit2 and `upto` rejected
+- a challenge timeout no greater than the configured 60-second policy ceiling
 
-```ts
-{ name: "My Service", url: "https://example.com/api/endpoint", method: "GET" }
-```
+The deterministic reconciliation fixtures separately model settlement, response delivery, and business effect. They cover unresolved authorization transmission, late settlement, response loss after an effect, identical HTTP 502 shapes before and after submission, authoritative zero-settlement closure, and concurrent identical-key replay.
 
-Supported methods: `GET`, `POST`. POST requests send an empty JSON body.
+These are policy/decision fixtures, not a substitute for an observation journal or real Base receipt verification.
 
-## API
+## Run locally
 
-`GET /api/health` returns:
-
-```json
-{
-  "timestamp": "2025-01-01T00:00:00.000Z",
-  "summary": { "total": 6, "online": 5, "degraded": 1, "x402Enabled": 3 },
-  "endpoints": [
-    {
-      "name": "...",
-      "url": "...",
-      "status": 402,
-      "responseTimeMs": 120,
-      "isHealthy": true,
-      "isX402": true,
-      "x402Details": { "accepts": [{ "maxAmountRequired": "1000", "network": "base-mainnet", ... }] }
-    }
-  ]
-}
-```
-
-## Local development
+Install dependencies, then run the deterministic suite:
 
 ```bash
-npm install
-vercel dev   # runs on http://localhost:3000
+npm test
+npm run typecheck
+npm run build
 ```
+
+The packaged contract can perform a live, unpaid challenge request when run manually:
+
+```bash
+npm run verify -- contracts/bankr-lint.json
+```
+
+That command does not authorize payment, but it does contact the contracted endpoint. Do not run it against a route without operator permission. `--pay` is deliberately disabled.
+
+The initial request preserves the contracted method and body. On a broken or misconfigured stateful route, an unpaid request could still cause a business effect, so live challenge checks are limited to operator-owned or explicitly authorized fixtures.
+
+## Unknown outcomes and retries
+
+If an authorization may have been transmitted and the response is lost, the settlement and business effect are `unknown`. Do not issue a new authorization based on elapsed time, an HTTP error, or an idempotency key alone.
+
+An identical signed-request replay is safe only after the route's replay contract proves it creates no new settlement and no new effect. A new authorization is safe only after the prior authorization is provably unusable and authoritative evidence establishes both settlement absence and effect absence.
+
+## Public routes in this branch
+
+- `GET /api/health` — local containment status; zero outbound requests.
+- `GET /api/trust` — legacy route; HTTP 410; zero outbound requests.
+- `POST /api/preflight` — legacy route; HTTP 410; zero outbound requests.
+- `x402/trust` — disabled paid-handler source; HTTP 410; zero outbound requests.
+
+## Not yet production-ready
+
+Paid execution remains blocked until at least the following are implemented and independently reviewed:
+
+- append-only, hash-linked observation journaling with secret redaction;
+- independent Base chain ID, receipt, finality, and canonical-block verification;
+- exact native-USDC `Transfer` verification from payer to the advertised recipient for the selected atomic amount;
+- settlement-submitter and recipient/router classification;
+- operator-authoritative business-effect reconciliation;
+- persisted terminal evidence with external recomputation;
+- deterministic and Base fork/RPC conformance coverage for the restricted paid slice;
+- deployed Vercel verification and separate Bankr service unpublish/disable verification.
+
+Facilitator or client metadata may be retained as a provider claim, but it cannot independently satisfy Base settlement or delivery.
+
+## Repository layout
+
+- `api/`, `x402/`, `public/` — contained public surface.
+- `src/index.ts`, `src/dashboard.ts`, `src/canary.ts` — contained loopback start path; no scheduler or generic outbound checker.
+- `contracts/` — pinned acceptance contracts.
+- `src/x402-challenge.ts` — exact-only challenge and no-spend predicate evaluation.
+- `src/reconciliation-policy.ts` — pure terminal and retry-safety derivation.
+- `src/__tests__/` — deterministic containment, challenge, browser, proxy, and reconciliation fixtures.
 
 ## Deployment
 
-Vercel auto-deploys on push to `main`. Production: [canary.0x402.sh](https://canary.0x402.sh)
+Production is configured at [canary.0x402.sh](https://canary.0x402.sh). This repository historically auto-deploys from `main`; verify the actual project settings before merging. A source merge alone does not prove the Bankr listing has been removed or that live legacy routes are non-charging.
