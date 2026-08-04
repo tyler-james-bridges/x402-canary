@@ -86,7 +86,7 @@ function localRequest(
   });
 }
 
-test("public handlers never make outbound requests", async () => {
+test("all public handlers except the fixed-source verifier remain zero-outbound", async () => {
   const originalFetch = globalThis.fetch;
   let outboundRequests = 0;
   globalThis.fetch = (async () => {
@@ -99,11 +99,30 @@ test("public handlers never make outbound requests", async () => {
     healthHandler(request("GET"), health.res);
     assert.equal(health.state.statusCode, 200);
     assert.deepEqual(health.state.body, {
+      schemaVersion: "0.1",
       service: "x402-canary",
-      status: "contained",
-      publicOutboundMonitoring: false,
-      publicProbeRoutes: "disabled",
-      outboundRequestsMade: 0,
+      status: "operational_read_only",
+      mode: "live_base_transaction_verification",
+      fixedSourceBaseVerification: {
+        enabled: true,
+        networkId: "eip155:8453",
+        nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        configuredSources: 2,
+        quorum: "unanimous",
+        finality: "shared_finalized_anchor",
+      },
+      legacyProbeRoutes: "disabled",
+      scheduledMonitoringEnabled: false,
+      callerSelectedRpcEnabled: false,
+      requestOutboundReadsMade: 0,
+      capabilities: {
+        walletAccessEnabled: false,
+        signingEnabled: false,
+        transactionSubmissionEnabled: false,
+        paymentExecutionEnabled: false,
+        retryExecutionEnabled: false,
+        actionExecutionEnabled: false,
+      },
     });
 
     const evidenceStatus = response();
@@ -124,6 +143,8 @@ test("public handlers never make outbound requests", async () => {
         retryExecutionEnabled: false,
         actionExecutionEnabled: false,
         callerSelectedTargetEnabled: false,
+        callerSelectedTransactionHashEnabled: true,
+        fixedSourceBaseVerificationEnabled: true,
         publicOutboundMonitoringEnabled: false,
       },
     );
@@ -199,7 +220,8 @@ test("the local start path binds loopback and cannot revive outbound probes", as
 
     const health = await localRequest(address.port, "/api/health", "GET");
     assert.equal(health.status, 200);
-    assert.equal(JSON.parse(health.body).outboundRequestsMade, 0);
+    assert.equal(JSON.parse(health.body).requestOutboundReadsMade, 0);
+    assert.equal(JSON.parse(health.body).fixedSourceBaseVerification.enabled, true);
 
     const evidenceStatus = await localRequest(
       address.port,
@@ -230,7 +252,26 @@ test("the local start path binds loopback and cannot revive outbound probes", as
       "METHOD_NOT_ALLOWED",
     );
 
-    for (const assetRoute of ["/", "/styles.css", "/app.js", "/llms.txt", "/og.png"]) {
+    const rejectedVerifierInput = await localRequest(
+      address.port,
+      "/api/base-transaction?rpcUrl=http://127.0.0.1",
+      "GET",
+    );
+    assert.equal(rejectedVerifierInput.status, 400);
+    assert.equal(
+      JSON.parse(rejectedVerifierInput.body).error.code,
+      "INVALID_REQUEST",
+    );
+    assert.equal(rejectedVerifierInput.headers["access-control-allow-origin"], undefined);
+
+    for (const assetRoute of [
+      "/",
+      "/styles.css",
+      "/app.js",
+      "/llms.txt",
+      "/og.png",
+      "/og-live-verifier.png",
+    ]) {
       const asset = await localRequest(address.port, assetRoute, "GET");
       assert.equal(asset.status, 200, assetRoute);
       assert.equal(asset.headers["cache-control"], "no-store", assetRoute);

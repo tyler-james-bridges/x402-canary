@@ -1,12 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const STATUS = {
-  service: "x402-canary",
-  status: "contained",
-  publicOutboundMonitoring: false,
-  publicProbeRoutes: "disabled",
-  outboundRequestsMade: 0,
-} as const;
+import { PUBLIC_HEALTH_STATUS } from "../src/public-health.js";
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -25,7 +19,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         code: "METHOD_NOT_ALLOWED",
         message: "This status endpoint supports GET and HEAD only.",
       },
-      outboundRequestsMade: 0,
+      requestOutboundReadsMade: 0,
     });
   }
 
@@ -33,5 +27,5 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  return res.status(200).json(STATUS);
+  return res.status(200).json(PUBLIC_HEALTH_STATUS);
 }

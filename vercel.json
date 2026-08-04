@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/base-transaction.ts": {
+      "maxDuration": 10
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

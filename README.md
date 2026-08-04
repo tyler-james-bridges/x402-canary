@@ -1,14 +1,16 @@
 # x402-canary
 
-Contract-defined acceptance verification for x402 paid paths, currently narrowed to Base mainnet, native USDC, x402 v2 `exact`, and EIP-3009-style requirements.
+Read-only Base transaction evidence for native USDC, plus a private no-action x402 evidence kernel.
 
 ## Current safety state
 
-This branch is in source-containment and deterministic-fixture mode:
+This branch is in live read-only verification, source-containment, and no-spend mode:
 
 - Public caller-selected outbound probes are disabled and return HTTP 410.
-- `/api/health` returns local containment status and makes no third-party requests.
-- `npm start` serves only the containment page on `127.0.0.1`; scheduled endpoint checks are disabled.
+- `GET /api/base-transaction?transactionHash=0x…` accepts one canonical Base transaction hash and compares two code-pinned, server-owned Base RPC sources at a shared finalized anchor.
+- The public verifier can report public receipt and native-USDC EIP-3009 event facts. It cannot prove intended x402 terms, HTTP delivery, business effect, or retry safety.
+- `/api/health` reports the fixed verifier policy and makes no third-party requests itself.
+- `npm start` serves the verifier on `127.0.0.1`; scheduled endpoint checks remain disabled.
 - The source Bankr manifest advertises no paid services.
 - The CLI rejects `--pay` before loading a contract, and the executable AgentCash adapter is a fail-closed stub with no subprocess or wallet path.
 - The evidence CLI evaluates sanitized files only; it has no RPC, wallet, signer, URL-fetch, or payment option.
@@ -16,12 +18,23 @@ This branch is in source-containment and deterministic-fixture mode:
 - The separate `effect:verify` CLI performs local Ed25519 verification against an out-of-band registry hash; it exposes no network, database-write, retry, wallet, signer, transaction, or payment path.
 - Journal-bound bundle v0.2 persists branded Base/effect inputs and deterministic shadow results behind two adjacent journal commits; every execution flag remains false.
 - The `shadow:run` operator CLI composes those boundaries from a separately pinned manifest and an existing journaled attempt. It fetches only registry-pinned read-only Base RPC methods, never fetches the operation URL, and emits no retry or action directive beyond `none`.
-- The production web console at [canary.0x402.sh](https://canary.0x402.sh) reads only same-origin containment and release-status metadata. It does not expose private journals, artifacts, operation data, effect IDs, or retry verdicts and has no input or execution control.
+- The production web console at [canary.0x402.sh](https://canary.0x402.sh) accepts only a transaction hash, calls only its same-origin verifier API, and exposes no wallet, signer, transaction submission, payment, retry, or action control. Private journals, artifacts, operation data, effect IDs, and retry verdicts remain private.
 - Tests and CI make no production payment.
 
 The Vercel console and its legacy routes are a separate surface from any historical Bankr listing. A healthy console or HTTP 410 from Vercel does not prove that Bankr has paused or removed a separately hosted service.
 
 ## What is implemented
+
+The public Base verifier is a deliberately smaller claim than the private evidence kernel. For one transaction hash it:
+
+- pins Base mainnet, its genesis checkpoint, native Base USDC, and exactly two server-owned HTTPS RPC origins;
+- chooses the lower provider `finalized` height and requires both sources to agree on its number, hash, and timestamp;
+- requires an identical canonical receipt from both sources and withholds finality when the receipt is above the shared anchor;
+- classifies only adjacent native-USDC `AuthorizationUsed(address,bytes32) → Transfer(address,address,uint256)` pairs;
+- returns bounded, sanitized facts with explicit limitations and an observation hash;
+- never accepts an RPC URL, method, chain, asset, recipient, amount, block tag, or finality policy from the caller.
+
+`confirmed` therefore means one qualifying finalized event pair was observed unanimously across the configured sources. It does not mean “x402 payment verified” and grants no execution or retry authority.
 
 The no-spend verifier and fixtures evaluate objective predicates rather than a trust score or payment recommendation:
 
@@ -71,6 +84,14 @@ npm test
 npm run typecheck
 npm run build
 ```
+
+Then start the loopback-only UI:
+
+```bash
+npm start
+```
+
+Open `http://127.0.0.1:3402` and submit a Base transaction hash. The lookup performs read-only requests against the fixed public registry; it does not use a wallet or submit a transaction. Public gateway availability is best-effort, so provider/configuration/deadline failures return a sanitized `503` rather than a chain verdict.
 
 Recompute the sanitized Evidence Kernel example without making a network request:
 
@@ -136,19 +157,20 @@ An identical signed-request replay is safe only after the route's replay contrac
 
 ## Public routes in this branch
 
+- `GET /api/base-transaction?transactionHash=0x…` — fixed-source Base receipt/finality and native-USDC event observation; the only public route allowed to perform registry-pinned outbound reads.
 - `GET /api/evidence-status` — sanitized, read-only evidence-release and deployment metadata; zero outbound requests.
-- `GET /api/health` — containment status; zero outbound requests.
+- `GET /api/health` — verifier policy and capability status; zero outbound requests for the health request itself.
 - `GET /api/trust` — legacy route; HTTP 410; zero outbound requests.
 - `POST /api/preflight` — legacy route; HTTP 410; zero outbound requests.
 - `x402/trust` — disabled paid-handler source; HTTP 410; zero outbound requests.
 
-The browser fetches only `/api/health` and `/api/evidence-status` from its own origin. The evidence status identifies the verified core commit separately from the currently deployed UI commit and makes every payment, wallet, signing, transaction, retry, action, caller-target, and public-outbound capability explicitly false. It is release evidence, not a live view into private operator data and not permission to execute anything.
+The browser fetches `/api/health`, `/api/evidence-status`, and `/api/base-transaction` from its own origin. The evidence status distinguishes caller-selected public transaction hashes from caller-selected network targets: the former is enabled, while RPC origins, payment, wallet, signing, transaction submission, retry, action, and scheduled monitoring remain disabled. It is public chain observation, not a live view into private operator data and not permission to execute anything.
 
 ## Not yet production-ready
 
 Evidence Kernel v0.1 is a deterministic local evaluator, not authorization to turn payment back on. Paid execution remains blocked until at least:
 
-- production RPC sources or a self-validating node replace the development public-provider pair, with live Base fork, provider-independence, and native-USDC upgrade conformance;
+- provisioned production RPC sources or a self-validating node replace the best-effort public gateway pair, with live Base fork, provider-independence, quota, and native-USDC upgrade conformance;
 - an operator-owned read-only system-of-record adapter emits the implemented signed effect-attestation format and its uniqueness/closure claims are validated against the real store;
 - the cooperating-process sentinel is replaced or operationally wrapped with an OS advisory lock or transactional store, and receipts are anchored in external WORM/signed checkpoint storage to prevent complete rollback;
 - caller-declared attempt predicates gain configured authority evidence, and offline verification receives separately pinned registries when historical signature re-verification is required;
@@ -162,7 +184,8 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 
 ## Repository layout
 
-- `api/`, `x402/`, `public/` — contained public surface and read-only evidence console.
+- `api/`, `x402/`, `public/` — bounded public surface and read-only Base evidence console.
+- `src/evidence/base-transaction.ts` and `src/public-base-transaction*.ts` — transaction-only finalized receipt/event observer and sanitized HTTP boundary.
 - `src/public-evidence-status.ts` — immutable allowlisted public release DTO; no evidence-store or action imports.
 - `src/index.ts`, `src/dashboard.ts`, `src/canary.ts` — contained loopback start path; no scheduler or generic outbound checker.
 - `contracts/` — pinned acceptance contracts.

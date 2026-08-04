@@ -1,0 +1,26 @@
+export const PUBLIC_HEALTH_STATUS = Object.freeze({
+  schemaVersion: "0.1",
+  service: "x402-canary",
+  status: "operational_read_only",
+  mode: "live_base_transaction_verification",
+  fixedSourceBaseVerification: Object.freeze({
+    enabled: true,
+    networkId: "eip155:8453",
+    nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    configuredSources: 2,
+    quorum: "unanimous",
+    finality: "shared_finalized_anchor",
+  }),
+  legacyProbeRoutes: "disabled",
+  scheduledMonitoringEnabled: false,
+  callerSelectedRpcEnabled: false,
+  requestOutboundReadsMade: 0,
+  capabilities: Object.freeze({
+    walletAccessEnabled: false,
+    signingEnabled: false,
+    transactionSubmissionEnabled: false,
+    paymentExecutionEnabled: false,
+    retryExecutionEnabled: false,
+    actionExecutionEnabled: false,
+  }),
+} as const);

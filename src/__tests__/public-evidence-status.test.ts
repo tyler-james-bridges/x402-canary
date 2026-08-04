@@ -131,7 +131,19 @@ test("the public v0.1 release status exposes the fixed verified evidence surface
     retryExecutionEnabled: false,
     actionExecutionEnabled: false,
     callerSelectedTargetEnabled: false,
+    callerSelectedTransactionHashEnabled: true,
+    fixedSourceBaseVerificationEnabled: true,
     publicOutboundMonitoringEnabled: false,
+  });
+  assert.deepEqual(status.liveVerifier, {
+    schemaVersion: "0.1",
+    scope: "transaction_only",
+    networkId: "eip155:8453",
+    nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    configuredSources: 2,
+    quorum: "unanimous",
+    finality: "shared_finalized_anchor",
+    callerSelectedRpcEnabled: false,
   });
   assert.deepEqual(status.trust, {
     externalTruthProven: false,
@@ -144,18 +156,23 @@ test("the public v0.1 release status exposes the fixed verified evidence surface
   assert.deepEqual(
     status.publicRoutes.map((route) => route.path),
     [
+      "/api/base-transaction",
       "/api/evidence-status",
       "/api/health",
       "/api/trust",
       "/api/preflight",
     ],
   );
+  assert.ok(status.publicRoutes.every((route) => route.callerSelectedTargetEnabled === false));
+  assert.equal(
+    status.publicRoutes.find((route) => route.path === "/api/base-transaction")
+      ?.outboundRequestsEnabled,
+    true,
+  );
   assert.ok(
-    status.publicRoutes.every(
-      (route) =>
-        route.callerSelectedTargetEnabled === false &&
-        route.outboundRequestsEnabled === false,
-    ),
+    status.publicRoutes
+      .filter((route) => route.path !== "/api/base-transaction")
+      .every((route) => route.outboundRequestsEnabled === false),
   );
   assert.deepEqual(status.deployment, {
     environment: "production",

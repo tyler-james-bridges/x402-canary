@@ -50,14 +50,15 @@ export interface PublicOutcomeRowV01 {
 
 export interface PublicRouteInventoryEntryV01 {
   path:
+    | "/api/base-transaction"
     | "/api/evidence-status"
     | "/api/health"
     | "/api/trust"
     | "/api/preflight";
   methods: readonly ("GET" | "HEAD" | "POST" | "OPTIONS")[];
-  disposition: "read_only_status" | "disabled_gone";
+  disposition: "fixed_source_base_verification" | "read_only_status" | "disabled_gone";
   callerSelectedTargetEnabled: false;
-  outboundRequestsEnabled: false;
+  outboundRequestsEnabled: boolean;
 }
 
 export interface PublicEvidenceReleaseV01 {
@@ -93,7 +94,19 @@ export interface PublicEvidenceReleaseV01 {
     retryExecutionEnabled: false;
     actionExecutionEnabled: false;
     callerSelectedTargetEnabled: false;
+    callerSelectedTransactionHashEnabled: true;
+    fixedSourceBaseVerificationEnabled: true;
     publicOutboundMonitoringEnabled: false;
+  };
+  liveVerifier: {
+    schemaVersion: "0.1";
+    scope: "transaction_only";
+    networkId: "eip155:8453";
+    nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+    configuredSources: 2;
+    quorum: "unanimous";
+    finality: "shared_finalized_anchor";
+    callerSelectedRpcEnabled: false;
   };
   trust: {
     externalTruthProven: false;
@@ -303,7 +316,19 @@ const release = {
     retryExecutionEnabled: false,
     actionExecutionEnabled: false,
     callerSelectedTargetEnabled: false,
+    callerSelectedTransactionHashEnabled: true,
+    fixedSourceBaseVerificationEnabled: true,
     publicOutboundMonitoringEnabled: false,
+  },
+  liveVerifier: {
+    schemaVersion: "0.1",
+    scope: "transaction_only",
+    networkId: "eip155:8453",
+    nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    configuredSources: 2,
+    quorum: "unanimous",
+    finality: "shared_finalized_anchor",
+    callerSelectedRpcEnabled: false,
   },
   trust: {
     externalTruthProven: false,
@@ -314,6 +339,13 @@ const release = {
     historicalSignatureReverification: false,
   },
   publicRoutes: [
+    {
+      path: "/api/base-transaction",
+      methods: ["GET"],
+      disposition: "fixed_source_base_verification",
+      callerSelectedTargetEnabled: false,
+      outboundRequestsEnabled: true,
+    },
     {
       path: "/api/evidence-status",
       methods: ["GET", "HEAD", "OPTIONS"],

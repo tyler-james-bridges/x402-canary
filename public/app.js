@@ -1,6 +1,23 @@
 const RELEASE_CORE_SHA = "3ead8680d764ecbafe0739865f3789f8928f0fa6";
 const THEME_KEY = "x402-canary-theme";
 const STATUS_ROUTES = new Set(["/api/health", "/api/evidence-status"]);
+const BASE_TRANSACTION_ROUTE = "/api/base-transaction";
+const BASE_NETWORK_ID = "eip155:8453";
+const BASE_USDC_ASSET = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+const TRANSACTION_HASH_PATTERN = /^0x[0-9a-fA-F]{64}$/;
+const ADDRESS_PATTERN = /^0x[0-9a-f]{40}$/;
+const BYTES32_PATTERN = /^0x[0-9a-f]{64}$/;
+const CANONICAL_UINT_PATTERN = /^(?:0|[1-9]\d*)$/;
+const VERIFIER_TIMEOUT_MS = 20_000;
+const VERDICT_STATUSES = new Set([
+  "confirmed",
+  "multiple",
+  "pending_finality",
+  "not_observed",
+  "not_eip3009_usdc",
+  "reverted",
+  "contradiction",
+]);
 const DEPLOYMENT_ENVIRONMENTS = new Set([
   "production",
   "preview",
@@ -17,7 +34,38 @@ const CAPABILITY_EXPECTATIONS = {
   retryExecutionEnabled: false,
   actionExecutionEnabled: false,
   callerSelectedTargetEnabled: false,
+  callerSelectedTransactionHashEnabled: true,
+  fixedSourceBaseVerificationEnabled: true,
   publicOutboundMonitoringEnabled: false,
+};
+
+const LIVE_VERIFIER_EXPECTATIONS = {
+  schemaVersion: "0.1",
+  scope: "transaction_only",
+  networkId: BASE_NETWORK_ID,
+  nativeUsdcAsset: BASE_USDC_ASSET,
+  configuredSources: 2,
+  quorum: "unanimous",
+  finality: "shared_finalized_anchor",
+  callerSelectedRpcEnabled: false,
+};
+
+const HEALTH_CAPABILITY_EXPECTATIONS = {
+  walletAccessEnabled: false,
+  signingEnabled: false,
+  transactionSubmissionEnabled: false,
+  paymentExecutionEnabled: false,
+  retryExecutionEnabled: false,
+  actionExecutionEnabled: false,
+};
+
+const HEALTH_VERIFIER_EXPECTATIONS = {
+  enabled: true,
+  networkId: BASE_NETWORK_ID,
+  nativeUsdcAsset: BASE_USDC_ASSET,
+  configuredSources: 2,
+  quorum: "unanimous",
+  finality: "shared_finalized_anchor",
 };
 
 const TRUST_EXPECTATIONS = {
@@ -135,6 +183,13 @@ const OUTCOME_EXPECTATIONS = [
 
 const ROUTE_EXPECTATIONS = [
   {
+    path: "/api/base-transaction",
+    methods: ["GET"],
+    disposition: "fixed_source_base_verification",
+    callerSelectedTargetEnabled: false,
+    outboundRequestsEnabled: true,
+  },
+  {
     path: "/api/evidence-status",
     methods: ["GET", "HEAD", "OPTIONS"],
     disposition: "read_only_status",
@@ -251,13 +306,30 @@ async function fetchJson(path) {
 }
 
 function validateHealth(value) {
-  return matchesExactRecord(value, {
-    service: "x402-canary",
-    status: "contained",
-    publicOutboundMonitoring: false,
-    publicProbeRoutes: "disabled",
-    outboundRequestsMade: 0,
-  });
+  return (
+    hasExactKeys(value, [
+      "schemaVersion",
+      "service",
+      "status",
+      "mode",
+      "fixedSourceBaseVerification",
+      "legacyProbeRoutes",
+      "scheduledMonitoringEnabled",
+      "callerSelectedRpcEnabled",
+      "requestOutboundReadsMade",
+      "capabilities",
+    ]) &&
+    value.schemaVersion === "0.1" &&
+    value.service === "x402-canary" &&
+    value.status === "operational_read_only" &&
+    value.mode === "live_base_transaction_verification" &&
+    matchesExactRecord(value.fixedSourceBaseVerification, HEALTH_VERIFIER_EXPECTATIONS) &&
+    value.legacyProbeRoutes === "disabled" &&
+    value.scheduledMonitoringEnabled === false &&
+    value.callerSelectedRpcEnabled === false &&
+    value.requestOutboundReadsMade === 0 &&
+    matchesExactRecord(value.capabilities, HEALTH_CAPABILITY_EXPECTATIONS)
+  );
 }
 
 function renderHealth(value) {
@@ -273,7 +345,7 @@ function renderHealth(value) {
 
   setText("health-service", value.service);
   setText("health-status", value.status);
-  setText("health-outbound", value.outboundRequestsMade);
+  setText("health-outbound", value.requestOutboundReadsMade);
   setText("health-connection", "verified");
   setState("health-card", "verified");
   return true;
@@ -344,7 +416,7 @@ function validateRoutes(value) {
       matchesStringArray(route.methods, expected.methods) &&
       route.disposition === expected.disposition &&
       route.callerSelectedTargetEnabled === false &&
-      route.outboundRequestsEnabled === false
+      route.outboundRequestsEnabled === expected.outboundRequestsEnabled
     );
   });
 }
@@ -380,6 +452,7 @@ function validateEvidenceStatus(value) {
       "evidenceLayers",
       "outcomeMatrix",
       "capabilities",
+      "liveVerifier",
       "trust",
       "publicRoutes",
       "deployment",
@@ -398,6 +471,7 @@ function validateEvidenceStatus(value) {
     validateLayers(value.evidenceLayers) &&
     validateOutcomes(value.outcomeMatrix) &&
     matchesExactRecord(value.capabilities, CAPABILITY_EXPECTATIONS) &&
+    matchesExactRecord(value.liveVerifier, LIVE_VERIFIER_EXPECTATIONS) &&
     matchesExactRecord(value.trust, TRUST_EXPECTATIONS) &&
     validateRoutes(value.publicRoutes) &&
     validateDeployment(value.deployment)
@@ -509,10 +583,10 @@ function finishStatus(healthVerified, evidenceVerified) {
   setText("status-checked", checkedAt);
   if (healthVerified && evidenceVerified) {
     setState("live-chip", "verified");
-    setText("live-chip-label", "live / contained");
+    setText("live-chip-label", "live / read only");
     setText(
       "status-note",
-      "Both same-origin routes returned the exact expected containment and no-action release contracts.",
+      "Both same-origin routes returned the exact expected live read-only configuration and no-action execution contract.",
     );
     return;
   }
@@ -551,5 +625,609 @@ async function loadStatus() {
   finishStatus(healthVerified, evidenceVerified);
 }
 
+const PUBLIC_VERIFIER_CAPABILITIES = {
+  fixedSourceBaseVerificationEnabled: true,
+  callerSelectedTransactionHashEnabled: true,
+  callerSelectedTargetEnabled: false,
+  callerSelectedRpcEnabled: false,
+  paymentExecutionEnabled: false,
+  walletAccessEnabled: false,
+  signingEnabled: false,
+  transactionSubmissionEnabled: false,
+  retryExecutionEnabled: false,
+  actionExecutionEnabled: false,
+};
+
+const PUBLIC_VERIFIER_ASSURANCE = {
+  scope: "fixed_source_base_receipt_and_native_usdc_eip3009_events",
+  sourceIdentity: "server_pinned_origins",
+  finality: "shared_finalized_block_hash",
+  quorum: "unanimous",
+  externalTruthProven: false,
+};
+
+const PUBLIC_VERIFIER_PRIVACY = {
+  transactionHashTransport: "public_url_query",
+  transactionHashMayAppearInPlatformLogs: true,
+  applicationPersistenceEnabled: false,
+};
+
+const PUBLIC_VERIFIER_LIMITATIONS = {
+  intendedX402TermsProven: false,
+  httpDeliveryProven: false,
+  businessEffectProven: false,
+  retrySafetyProven: false,
+};
+
+const VERDICT_COPY = {
+  confirmed: {
+    chip: "confirmed",
+    title: "Finalized USDC event pair observed",
+  },
+  multiple: {
+    chip: "multiple pairs",
+    title: "Multiple USDC event pairs observed",
+  },
+  pending_finality: {
+    chip: "finality pending",
+    title: "Observed, finality pending",
+  },
+  not_observed: {
+    chip: "not observed",
+    title: "Transaction not observed",
+  },
+  not_eip3009_usdc: {
+    chip: "not EIP-3009",
+    title: "No qualifying USDC event pair",
+  },
+  reverted: {
+    chip: "reverted",
+    title: "Transaction reverted",
+  },
+  contradiction: {
+    chip: "evidence contradiction",
+    title: "Observation contradicted policy",
+  },
+};
+
+class VerifierRequestError extends Error {
+  constructor(code, retryAfterSeconds = null) {
+    super(code);
+    this.name = "VerifierRequestError";
+    this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+let verifierRequestSequence = 0;
+let activeVerifierController = null;
+let lastTransactionHash = null;
+
+function isCanonicalTimestamp(value) {
+  if (typeof value !== "string") return false;
+  const pattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const parsed = Date.parse(value);
+  return pattern.test(value) && Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
+}
+
+function isCanonicalUint(value, allowZero = true) {
+  if (typeof value !== "string" || !CANONICAL_UINT_PATTERN.test(value)) return false;
+  return allowZero || value !== "0";
+}
+
+function isSafeUnsignedInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function isSha256(value) {
+  return typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value);
+}
+
+function validateReceipt(value, transactionHash) {
+  if (value === null) return true;
+  return (
+    hasExactKeys(value, ["transactionHash", "blockHash", "blockNumber", "status"]) &&
+    value.transactionHash === transactionHash &&
+    BYTES32_PATTERN.test(value.blockHash) &&
+    isCanonicalUint(value.blockNumber) &&
+    (value.status === "success" || value.status === "reverted")
+  );
+}
+
+function validateFinalizedAnchor(value) {
+  if (value === null) return true;
+  return (
+    hasExactKeys(value, ["blockNumber", "blockHash", "blockTimestamp"]) &&
+    isCanonicalUint(value.blockNumber) &&
+    BYTES32_PATTERN.test(value.blockHash) &&
+    isCanonicalUint(value.blockTimestamp)
+  );
+}
+
+function validateSourceAgreement(value) {
+  return (
+    hasExactKeys(value, ["configured", "agreeing", "quorum"]) &&
+    value.configured === 2 &&
+    isSafeUnsignedInteger(value.agreeing) &&
+    value.agreeing <= value.configured &&
+    value.quorum === "unanimous"
+  );
+}
+
+function validateSettlement(value) {
+  return (
+    hasExactKeys(value, [
+      "from",
+      "to",
+      "valueAtomic",
+      "nonce",
+      "authorizationUsedLogIndex",
+      "transferLogIndex",
+    ]) &&
+    ADDRESS_PATTERN.test(value.from) &&
+    ADDRESS_PATTERN.test(value.to) &&
+    isCanonicalUint(value.valueAtomic, false) &&
+    BYTES32_PATTERN.test(value.nonce) &&
+    isSafeUnsignedInteger(value.authorizationUsedLogIndex) &&
+    isSafeUnsignedInteger(value.transferLogIndex) &&
+    value.transferLogIndex === value.authorizationUsedLogIndex + 1
+  );
+}
+
+function validateReasons(value) {
+  if (!Array.isArray(value)) return false;
+  if (!value.every((reason) => typeof reason === "string" && /^[A-Z][A-Z0-9_]*$/.test(reason))) {
+    return false;
+  }
+  return value.every((reason, index) => index === 0 || value[index - 1] < reason);
+}
+
+function validatePublicBaseTransaction(value, expectedTransactionHash) {
+  if (
+    !hasExactKeys(value, [
+      "schemaVersion",
+      "kind",
+      "checkedAt",
+      "networkId",
+      "transactionHash",
+      "status",
+      "receipt",
+      "finalizedAnchor",
+      "sourceAgreement",
+      "confirmations",
+      "settlementCount",
+      "settlements",
+      "truncated",
+      "reasons",
+      "observationHash",
+      "assurance",
+      "capabilities",
+      "privacy",
+      "limitations",
+    ])
+  ) {
+    return false;
+  }
+
+  if (
+    value.schemaVersion !== "0.1" ||
+    value.kind !== "public_base_transaction_verification" ||
+    value.networkId !== BASE_NETWORK_ID ||
+    value.transactionHash !== expectedTransactionHash ||
+    !isCanonicalTimestamp(value.checkedAt) ||
+    !VERDICT_STATUSES.has(value.status) ||
+    !validateReceipt(value.receipt, expectedTransactionHash) ||
+    !validateFinalizedAnchor(value.finalizedAnchor) ||
+    !validateSourceAgreement(value.sourceAgreement) ||
+    !isSafeUnsignedInteger(value.confirmations) ||
+    !isSafeUnsignedInteger(value.settlementCount) ||
+    !Array.isArray(value.settlements) ||
+    value.settlements.length > 32 ||
+    !value.settlements.every(validateSettlement) ||
+    typeof value.truncated !== "boolean" ||
+    !validateReasons(value.reasons) ||
+    !isSha256(value.observationHash) ||
+    !matchesExactRecord(value.assurance, PUBLIC_VERIFIER_ASSURANCE) ||
+    !matchesExactRecord(value.capabilities, PUBLIC_VERIFIER_CAPABILITIES) ||
+    !matchesExactRecord(value.privacy, PUBLIC_VERIFIER_PRIVACY) ||
+    !matchesExactRecord(value.limitations, PUBLIC_VERIFIER_LIMITATIONS)
+  ) {
+    return false;
+  }
+
+  const countMatches = value.truncated
+    ? value.settlements.length === 32 && value.settlementCount > value.settlements.length
+    : value.settlementCount === value.settlements.length;
+  if (!countMatches) return false;
+
+  if (value.status === "confirmed") {
+    return (
+      value.receipt?.status === "success" &&
+      value.finalizedAnchor !== null &&
+      value.sourceAgreement.agreeing === 2 &&
+      value.settlementCount === 1 &&
+      value.truncated === false
+    );
+  }
+  if (value.status === "multiple") {
+    return (
+      value.receipt?.status === "success" &&
+      value.finalizedAnchor !== null &&
+      value.sourceAgreement.agreeing === 2 &&
+      value.settlementCount > 1
+    );
+  }
+  if (value.status === "not_observed") {
+    return value.receipt === null && value.settlementCount === 0;
+  }
+  if (value.status === "not_eip3009_usdc") {
+    return value.receipt?.status === "success" && value.settlementCount === 0;
+  }
+  if (value.status === "reverted") {
+    return value.receipt?.status === "reverted" && value.settlementCount === 0;
+  }
+  return true;
+}
+
+function canonicalTransactionHash(value) {
+  return TRANSACTION_HASH_PATTERN.test(value) ? value.toLowerCase() : null;
+}
+
+function setVerifierSections(visibleId) {
+  for (const id of ["verifier-idle", "verifier-loading", "verifier-result", "verifier-error"]) {
+    const section = element(id);
+    if (section) section.hidden = id !== visibleId;
+  }
+}
+
+function setVerdictChip(verdict, label) {
+  const chip = element("verdict-chip");
+  if (!chip) return;
+  chip.dataset.verdict = verdict;
+  chip.textContent = label;
+}
+
+function setFormLoading(loading) {
+  const form = element("verify-form");
+  const input = element("transaction-hash");
+  const button = element("verify-button");
+  const label = button?.querySelector(".button-label");
+  if (form) form.dataset.state = loading ? "loading" : "ready";
+  if (input) input.disabled = loading;
+  if (button) {
+    button.disabled = loading;
+    button.setAttribute("aria-busy", loading ? "true" : "false");
+  }
+  if (label) label.textContent = loading ? "Verifying…" : "Verify transaction";
+}
+
+function announceVerification(message) {
+  setText("verification-announcement", "");
+  window.setTimeout(() => setText("verification-announcement", message), 0);
+}
+
+function clearInputError() {
+  const input = element("transaction-hash");
+  const error = element("transaction-hash-error");
+  if (input) input.setAttribute("aria-invalid", "false");
+  if (error) {
+    error.textContent = "";
+    error.hidden = true;
+  }
+}
+
+function showInputError(message) {
+  const input = element("transaction-hash");
+  const error = element("transaction-hash-error");
+  if (input) input.setAttribute("aria-invalid", "true");
+  if (error) {
+    error.textContent = message;
+    error.hidden = false;
+  }
+  input?.focus();
+}
+
+function showVerifierIdle() {
+  setVerifierSections("verifier-idle");
+  setState("verifier-panel", "idle");
+  setVerdictChip("idle", "ready");
+  const panel = element("verifier-panel");
+  if (panel) {
+    panel.setAttribute("aria-busy", "false");
+    panel.setAttribute("aria-labelledby", "verifier-title");
+  }
+}
+
+function showVerifierLoading() {
+  setVerifierSections("verifier-loading");
+  setState("verifier-panel", "loading");
+  setVerdictChip("loading", "checking");
+  const panel = element("verifier-panel");
+  if (panel) {
+    panel.setAttribute("aria-busy", "true");
+    panel.setAttribute("aria-labelledby", "loading-title");
+  }
+  setFormLoading(true);
+  announceVerification("Checking the Base transaction across the configured read-only sources.");
+}
+
+function summaryForVerdict(value) {
+  const agreement = `${value.sourceAgreement.agreeing} of ${value.sourceAgreement.configured} configured Base sources`;
+  switch (value.status) {
+    case "confirmed":
+      return `${agreement} agree at a shared finalized anchor. Exactly one adjacent native-USDC AuthorizationUsed to Transfer event pair was observed.`;
+    case "multiple":
+      return `${agreement} agree at a shared finalized anchor, but ${value.settlementCount} qualifying native-USDC event pairs were observed. No intended payment is inferred.`;
+    case "pending_finality":
+      return "The receipt was observed, but it is not yet at the shared finalized anchor. Recheck after Base finality advances.";
+    case "not_observed":
+      return "No configured source returned a receipt at this observation snapshot. The transaction may be pending or unmined; this is not proof of absence.";
+    case "not_eip3009_usdc":
+      return "The receipt was observed, but it contains no qualifying adjacent native-USDC EIP-3009 event pair.";
+    case "reverted":
+      return "Configured sources observed a reverted receipt. No native-USDC EIP-3009 event pair is claimed.";
+    case "contradiction":
+      return "Configured observations did not satisfy the fixed canonical verification policy. Canary makes no transaction claim.";
+    default:
+      return "No transaction claim was made.";
+  }
+}
+
+function formatUsdc(valueAtomic) {
+  const value = BigInt(valueAtomic);
+  const whole = value / 1_000_000n;
+  const fraction = (value % 1_000_000n).toString().padStart(6, "0");
+  return `${whole.toString()}.${fraction} USDC`;
+}
+
+function displayAddress(value) {
+  const zero = `0x${"0".repeat(40)}`;
+  return value === zero ? `${value} · zero address` : value;
+}
+
+function addSettlementFact(list, label, value) {
+  const row = document.createElement("div");
+  const term = document.createElement("dt");
+  const detail = document.createElement("dd");
+  term.textContent = label;
+  detail.textContent = value;
+  row.append(term, detail);
+  list.append(row);
+}
+
+function settlementCard(settlement, index) {
+  const card = document.createElement("article");
+  card.className = "settlement-card";
+
+  const heading = document.createElement("div");
+  heading.className = "settlement-card-head";
+  const label = document.createElement("strong");
+  const amount = document.createElement("span");
+  label.textContent = `Pair ${String(index + 1).padStart(2, "0")}`;
+  amount.textContent = formatUsdc(settlement.valueAtomic);
+  heading.append(label, amount);
+
+  const facts = document.createElement("dl");
+  addSettlementFact(facts, "From", displayAddress(settlement.from));
+  addSettlementFact(facts, "To", displayAddress(settlement.to));
+  addSettlementFact(facts, "Atomic", settlement.valueAtomic);
+  addSettlementFact(facts, "Nonce", settlement.nonce);
+  addSettlementFact(
+    facts,
+    "Logs",
+    `${settlement.authorizationUsedLogIndex} → ${settlement.transferLogIndex}`,
+  );
+  card.append(heading, facts);
+  return card;
+}
+
+function renderSettlements(value) {
+  const section = element("settlement-section");
+  const list = element("settlement-list");
+  const truncation = element("truncation-note");
+  if (!section || !list || !truncation) return;
+  list.replaceChildren();
+  section.hidden = value.settlements.length === 0;
+  setText(
+    "settlement-count",
+    `${value.settlementCount} ${value.settlementCount === 1 ? "pair" : "pairs"}`,
+  );
+  for (const [index, settlement] of value.settlements.entries()) {
+    list.append(settlementCard(settlement, index));
+  }
+  truncation.hidden = !value.truncated;
+}
+
+function renderVerifierResult(value) {
+  const copy = VERDICT_COPY[value.status];
+  setVerifierSections("verifier-result");
+  setState("verifier-panel", value.status);
+  setVerdictChip(value.status, copy.chip);
+  setText("result-title", copy.title);
+  setText("result-summary", summaryForVerdict(value));
+  setText("result-transaction-hash", value.transactionHash);
+  setText("result-checked-at", value.checkedAt);
+  setText(
+    "result-receipt",
+    value.receipt === null
+      ? "not observed"
+      : `${value.receipt.status} · block ${value.receipt.blockNumber} · ${value.confirmations} confirmations · ${value.receipt.blockHash}`,
+  );
+  setText(
+    "result-anchor",
+    value.finalizedAnchor === null
+      ? "not established"
+      : `block ${value.finalizedAnchor.blockNumber} · ${value.finalizedAnchor.blockHash}`,
+  );
+  setText(
+    "result-sources",
+    `${value.sourceAgreement.agreeing} / ${value.sourceAgreement.configured} · unanimous policy`,
+  );
+  renderSettlements(value);
+
+  const panel = element("verifier-panel");
+  if (panel) {
+    panel.setAttribute("aria-busy", "false");
+    panel.setAttribute("aria-labelledby", "result-title");
+  }
+  setFormLoading(false);
+  announceVerification(`${copy.title}. ${summaryForVerdict(value)}`);
+  element("result-title")?.focus();
+}
+
+function errorPresentation(error) {
+  if (error instanceof VerifierRequestError) {
+    if (error.code === "RATE_LIMITED") {
+      const wait = error.retryAfterSeconds === null
+        ? "Please wait before trying again."
+        : `Please wait ${error.retryAfterSeconds} seconds before trying again.`;
+      return {
+        title: "Request limit reached",
+        message: `${wait} No transaction claim was made.`,
+      };
+    }
+    if (error.code === "TIMED_OUT") {
+      return {
+        title: "Verification timed out",
+        message: "The configured Base sources did not complete within the bounded window. No transaction claim was made.",
+      };
+    }
+    if (error.code === "SCHEMA_MISMATCH") {
+      return {
+        title: "Response could not be verified",
+        message: "The live response did not match the exact public evidence schema. Canary rejected it and made no transaction claim.",
+      };
+    }
+  }
+  return {
+    title: "Verification unavailable",
+    message: "The configured Base sources are unavailable or the verifier is not ready. No transaction claim was made.",
+  };
+}
+
+function showVerifierError(error) {
+  const presentation = errorPresentation(error);
+  setVerifierSections("verifier-error");
+  setState("verifier-panel", "error");
+  setVerdictChip("error", "unavailable");
+  setText("error-title", presentation.title);
+  setText("error-message", presentation.message);
+  const panel = element("verifier-panel");
+  if (panel) {
+    panel.setAttribute("aria-busy", "false");
+    panel.setAttribute("aria-labelledby", "error-title");
+  }
+  setFormLoading(false);
+  announceVerification(`${presentation.title}. ${presentation.message}`);
+  element("retry-verification")?.focus();
+}
+
+function retryAfterSeconds(response) {
+  const value = response.headers.get("Retry-After");
+  if (value === null || !/^\d{1,3}$/.test(value)) return null;
+  const seconds = Number(value);
+  return Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 600 ? seconds : null;
+}
+
+async function fetchBaseTransaction(transactionHash, signal) {
+  const query = new URLSearchParams({ transactionHash });
+  const response = await window.fetch(`${BASE_TRANSACTION_ROUTE}?${query.toString()}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "default",
+    credentials: "same-origin",
+    redirect: "error",
+    signal,
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) throw new VerifierRequestError("INVALID_REQUEST");
+    if (response.status === 429) {
+      throw new VerifierRequestError("RATE_LIMITED", retryAfterSeconds(response));
+    }
+    throw new VerifierRequestError("UNAVAILABLE");
+  }
+
+  const contentType = String(response.headers.get("Content-Type") ?? "").toLowerCase();
+  if (!contentType.startsWith("application/json")) {
+    throw new VerifierRequestError("SCHEMA_MISMATCH");
+  }
+  let value;
+  try {
+    value = await response.json();
+  } catch {
+    throw new VerifierRequestError("SCHEMA_MISMATCH");
+  }
+  if (!validatePublicBaseTransaction(value, transactionHash)) {
+    throw new VerifierRequestError("SCHEMA_MISMATCH");
+  }
+  return value;
+}
+
+async function verifyTransaction(transactionHash) {
+  const sequence = ++verifierRequestSequence;
+  activeVerifierController?.abort();
+  const controller = new AbortController();
+  activeVerifierController = controller;
+  lastTransactionHash = transactionHash;
+  showVerifierLoading();
+
+  const timeout = window.setTimeout(() => controller.abort(), VERIFIER_TIMEOUT_MS);
+  try {
+    const value = await fetchBaseTransaction(transactionHash, controller.signal);
+    if (sequence === verifierRequestSequence) renderVerifierResult(value);
+  } catch (error) {
+    if (sequence !== verifierRequestSequence) return;
+    if (controller.signal.aborted) {
+      showVerifierError(new VerifierRequestError("TIMED_OUT"));
+    } else {
+      showVerifierError(error);
+    }
+  } finally {
+    window.clearTimeout(timeout);
+    if (sequence === verifierRequestSequence) activeVerifierController = null;
+  }
+}
+
+function initializeVerifier() {
+  const form = element("verify-form");
+  const input = element("transaction-hash");
+  const again = element("verify-again");
+  const retry = element("retry-verification");
+  if (!form || !input) return;
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    clearInputError();
+    const transactionHash = canonicalTransactionHash(input.value);
+    if (transactionHash === null) {
+      showInputError("Enter exactly 0x followed by 64 hexadecimal characters, with no spaces.");
+      return;
+    }
+    input.value = transactionHash;
+    void verifyTransaction(transactionHash);
+  });
+
+  input.addEventListener("input", clearInputError);
+
+  again?.addEventListener("click", () => {
+    ++verifierRequestSequence;
+    activeVerifierController?.abort();
+    activeVerifierController = null;
+    lastTransactionHash = null;
+    setFormLoading(false);
+    clearInputError();
+    input.value = "";
+    showVerifierIdle();
+    input.focus({ preventScroll: true });
+    input.scrollIntoView({ block: "center" });
+  });
+
+  retry?.addEventListener("click", () => {
+    if (lastTransactionHash !== null) void verifyTransaction(lastTransactionHash);
+  });
+}
+
 initializeTheme();
+initializeVerifier();
 loadStatus();

@@ -567,15 +567,39 @@ type ConnectionExecutor = (
   body: string,
   timeoutMs: number,
   maxResponseBytes: number,
+  signal?: AbortSignal,
 ) => Promise<string>;
+
+function awaitWithAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (signal === undefined) return promise;
+  if (signal.aborted) return Promise.reject(new Error("REQUEST_ABORTED"));
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new Error("REQUEST_ABORTED"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
 
 async function executeHttpsRequest(
   source: ResolvedBaseRpcSource,
   body: string,
   timeoutMs: number,
   maxResponseBytes: number,
+  signal?: AbortSignal,
 ): Promise<string> {
-  const addresses = await dns.lookup(source.endpoint.hostname, { all: true, verbatim: true });
+  const addresses = await awaitWithAbort(
+    dns.lookup(source.endpoint.hostname, { all: true, verbatim: true }),
+    signal,
+  );
   if (addresses.length === 0 || addresses.some((entry) => !isPublicRpcAddress(entry.address, entry.family))) {
     throw new Error("DNS_POLICY_REJECTED");
   }
@@ -609,27 +633,40 @@ async function executeHttpsRequest(
   };
 
   return new Promise<string>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error("REQUEST_ABORTED"));
+      return;
+    }
+    let settled = false;
+    const finish = (error?: Error, value?: string) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener("abort", onAbort);
+      if (error) reject(error);
+      else resolve(value ?? "");
+    };
+    const onAbort = () => request.destroy(new Error("REQUEST_ABORTED"));
     const request = httpsRequest(options, (response) => {
       if (response.statusCode !== 200) {
         response.resume();
-        reject(new Error("HTTP_STATUS_REJECTED"));
+        finish(new Error("HTTP_STATUS_REJECTED"));
         return;
       }
       const contentType = String(response.headers["content-type"] ?? "").toLowerCase();
       if (!contentType.includes("application/json")) {
         response.resume();
-        reject(new Error("CONTENT_TYPE_REJECTED"));
+        finish(new Error("CONTENT_TYPE_REJECTED"));
         return;
       }
       if (response.headers["content-encoding"] !== undefined) {
         response.resume();
-        reject(new Error("CONTENT_ENCODING_REJECTED"));
+        finish(new Error("CONTENT_ENCODING_REJECTED"));
         return;
       }
       const declaredLength = Number(response.headers["content-length"] ?? 0);
       if (Number.isFinite(declaredLength) && declaredLength > maxResponseBytes) {
         response.resume();
-        reject(new Error("RESPONSE_TOO_LARGE"));
+        finish(new Error("RESPONSE_TOO_LARGE"));
         return;
       }
 
@@ -644,11 +681,12 @@ async function executeHttpsRequest(
         }
         chunks.push(buffer);
       });
-      response.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-      response.on("error", reject);
+      response.on("end", () => finish(undefined, Buffer.concat(chunks).toString("utf8")));
+      response.on("error", (error) => finish(error));
     });
     request.setTimeout(timeoutMs, () => request.destroy(new Error("REQUEST_TIMEOUT")));
-    request.on("error", reject);
+    request.on("error", (error) => finish(error));
+    signal?.addEventListener("abort", onAbort, { once: true });
     request.end(body);
   });
 }
@@ -663,6 +701,7 @@ export class HttpsBaseRpcTransport implements BaseRpcRequester {
     private readonly options: {
       timeoutMs?: number;
       maxResponseBytes?: number;
+      signal?: AbortSignal;
       connectionExecutor?: ConnectionExecutor;
     } = {},
   ) {
@@ -724,6 +763,7 @@ export class HttpsBaseRpcTransport implements BaseRpcRequester {
         body,
         this.options.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
         this.options.maxResponseBytes ?? MAX_RPC_RESPONSE_BYTES,
+        this.options.signal,
       );
     } catch {
       throw new BaseRpcTransportError("RPC_REQUEST_FAILED", sourceId, method);

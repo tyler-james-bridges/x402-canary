@@ -354,6 +354,38 @@ test("HTTPS transport emits only allowlisted JSON-RPC and validates response IDs
   );
 });
 
+test("HTTPS transport propagates a shared abort signal to the active request", async () => {
+  const registry = deriveBaseRpcSourceRegistry(manifest());
+  const resolved = resolveBaseRpcSources(registry, (name) =>
+    name === "BASE_RPC_ALPHA_URL" ? "https://rpc-a.example/rpc" : "https://rpc-b.example/rpc",
+  );
+  const controller = new AbortController();
+  let markStarted!: () => void;
+  const started = new Promise<void>((resolve) => { markStarted = resolve; });
+  let observedSignal: AbortSignal | undefined;
+  const transport = new HttpsBaseRpcTransport(resolved, {
+    signal: controller.signal,
+    connectionExecutor: async (_source, _body, _timeout, _limit, signal) => {
+      observedSignal = signal;
+      markStarted();
+      return new Promise<string>((_resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+      });
+    },
+  });
+
+  const pending = transport.request("alpha", "eth_chainId", []);
+  await started;
+  controller.abort();
+  await assert.rejects(
+    pending,
+    (error: unknown) =>
+      error instanceof BaseRpcTransportError && error.code === "RPC_REQUEST_FAILED",
+  );
+  assert.equal(observedSignal, controller.signal);
+  assert.equal(observedSignal?.aborted, true);
+});
+
 test("transport redacts provider errors and rejects oversized or mismatched envelopes", async () => {
   const registry = deriveBaseRpcSourceRegistry(manifest());
   const resolved = resolveBaseRpcSources(registry, (name) =>

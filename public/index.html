@@ -3,41 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Public, no-action verification console for the x402 Canary local-integrity evidence release on Base.">
+  <meta name="description" content="Inspect finalized native-USDC EIP-3009 transaction evidence on Base through pinned, read-only observations—without a wallet, signature, payment, or transaction submission.">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="x402 Canary · Shadow / No Action Evidence Console">
-  <meta property="og:description" content="Verify the bounded local-integrity evidence release on Base—without wallets, signing, payment execution, or action authority.">
+  <meta property="og:title" content="x402 Canary · Live Base Transaction Verifier">
+  <meta property="og:description" content="Inspect finalized native-USDC EIP-3009 receipt and log evidence on Base through a bounded, read-only verifier.">
   <meta property="og:url" content="https://canary.0x402.sh/">
-  <meta property="og:image" content="https://canary.0x402.sh/og.png">
-  <meta property="og:image:width" content="1729">
-  <meta property="og:image:height" content="910">
+  <meta property="og:image" content="https://canary.0x402.sh/og-live-verifier.png">
+  <meta property="og:image:width" content="1672">
+  <meta property="og:image:height" content="941">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="x402 Canary · Shadow / No Action Evidence Console">
-  <meta name="twitter:description" content="Verify the bounded local-integrity evidence release on Base—without wallets, signing, payment execution, or action authority.">
-  <meta name="twitter:image" content="https://canary.0x402.sh/og.png">
-  <title>x402 Canary · Shadow Evidence Console</title>
+  <meta name="twitter:title" content="x402 Canary · Live Base Transaction Verifier">
+  <meta name="twitter:description" content="Inspect finalized native-USDC EIP-3009 receipt and log evidence on Base through a bounded, read-only verifier.">
+  <meta name="twitter:image" content="https://canary.0x402.sh/og-live-verifier.png">
+  <title>x402 Canary · Live Base Transaction Verifier</title>
   <link rel="canonical" href="https://canary.0x402.sh/">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Skip to evidence</a>
+  <a class="skip-link" href="#verify">Skip to transaction verifier</a>
 
   <header class="site-header">
     <a class="brand" href="/" aria-label="x402 Canary home">
       <span class="brand-mark" aria-hidden="true"><span></span></span>
       <span class="brand-copy">
         <strong>x402 / canary</strong>
-        <small>evidence console</small>
+        <small>Base evidence verifier</small>
       </span>
     </a>
 
-    <nav class="site-nav" aria-label="Evidence console">
-      <a href="#system">System</a>
+    <nav class="site-nav" aria-label="Transaction verifier">
+      <a href="#verify">Verify</a>
+      <a href="#system">Method</a>
       <a href="#matrix">Outcomes</a>
       <a href="#limits">Limits</a>
     </nav>
@@ -55,58 +56,152 @@
   </header>
 
   <main id="main-content">
-    <section class="hero" aria-labelledby="hero-title">
+    <section class="hero" id="verify" aria-labelledby="hero-title">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-copy">
-        <p class="eyebrow">Base mainnet · native USDC · evidence only</p>
-        <h1 id="hero-title"><span>Shadow</span><span class="slash">/</span><span>No action</span></h1>
+        <p class="eyebrow">Base mainnet · native USDC · live read-only verification</p>
+        <h1 id="hero-title"><span>Verify a Base</span><span class="hero-signal">USDC transaction.</span></h1>
         <p class="hero-lead">
-          A public verification surface for independently recomputable settlement,
-          effect, and journal integrity. It reports what the local evidence graph proves—and
-          keeps everything outside that boundary visibly unproven.
+          Paste a transaction hash. Canary compares registry-pinned Base observations and
+          reports finalized native-USDC EIP-3009 receipt and log evidence.
         </p>
 
-        <div class="release-strip" aria-label="Release details">
-          <div>
-            <span class="strip-label">Release</span>
-            <strong>local-integrity evidence</strong>
+        <form class="verify-form" id="verify-form" novalidate>
+          <label for="transaction-hash">Base transaction hash</label>
+          <div class="verify-control">
+            <input
+              id="transaction-hash"
+              name="transactionHash"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="66"
+              placeholder="0x…"
+              aria-describedby="transaction-hash-help transaction-hash-error"
+              aria-invalid="false"
+            >
+            <button id="verify-button" type="submit">
+              <span class="button-label">Verify transaction</span>
+              <span class="button-progress" aria-hidden="true"></span>
+            </button>
           </div>
-          <div>
-            <span class="strip-label">Core commit</span>
-            <code>3ead868</code>
-          </div>
-          <div>
-            <span class="strip-label">Mode</span>
-            <strong>shadow_no_action</strong>
-          </div>
-          <div>
-            <span class="strip-label">Directive</span>
-            <strong>none</strong>
-          </div>
-        </div>
+          <p class="field-help" id="transaction-hash-help">
+            Enter a public <code>0x</code>-prefixed, 32-byte transaction hash. No RPC URL,
+            wallet, signature, or payment instruction is accepted. The hash is sent in a URL
+            query and may appear in platform request logs.
+          </p>
+          <p class="field-error" id="transaction-hash-error" role="alert" hidden></p>
+        </form>
+
+        <ul class="verifier-locks" aria-label="Fixed verification boundary">
+          <li><span aria-hidden="true"></span> Base mainnet</li>
+          <li><span aria-hidden="true"></span> Native USDC</li>
+          <li><span aria-hidden="true"></span> Pinned read-only sources</li>
+          <li><span aria-hidden="true"></span> No execution authority</li>
+        </ul>
       </div>
 
-      <aside class="containment-card" aria-labelledby="containment-title">
-        <div class="card-kicker">Execution boundary</div>
-        <h2 id="containment-title">Observation without authority to act.</h2>
-        <ul class="control-list">
-          <li><span aria-hidden="true">×</span> Wallet</li>
-          <li><span aria-hidden="true">×</span> Signing</li>
-          <li><span aria-hidden="true">×</span> Transaction submission</li>
-          <li><span aria-hidden="true">×</span> Payment execution</li>
-          <li><span aria-hidden="true">×</span> Action execution</li>
-        </ul>
-        <p>
-          This page accepts no endpoint, operation, authorization, or private evidence.
-          It exposes no execution control.
-        </p>
+      <aside
+        class="verifier-panel"
+        id="verifier-panel"
+        data-state="idle"
+        aria-labelledby="verifier-title"
+        aria-busy="false"
+      >
+        <div class="verifier-panel-head">
+          <span class="card-kicker">Transaction evidence</span>
+          <span class="verdict-chip" id="verdict-chip" data-verdict="idle">ready</span>
+        </div>
+
+        <div class="verifier-idle" id="verifier-idle">
+          <h2 id="verifier-title">What this check establishes</h2>
+          <ol class="check-list">
+            <li><span>01</span><div>Configured-source agreement</div></li>
+            <li><span>02</span><div>Canonical receipt and execution status</div></li>
+            <li><span>03</span><div>Shared finalized Base anchor</div></li>
+            <li><span>04</span><div>Adjacent <code>AuthorizationUsed → Transfer</code> evidence</div></li>
+          </ol>
+          <p class="verifier-boundary">
+            This verifies public onchain receipt and USDC log facts only. It does not prove
+            intended x402 terms, HTTP delivery, business effect, or retry safety.
+          </p>
+        </div>
+
+        <div class="verifier-loading" id="verifier-loading" hidden>
+          <div class="loading-orbit" aria-hidden="true"><span></span></div>
+          <h2 id="loading-title">Comparing Base observations</h2>
+          <p id="loading-message">Reading the pinned sources and locating a shared finalized anchor.</p>
+        </div>
+
+        <div class="verifier-result" id="verifier-result" hidden>
+          <p class="result-kicker" id="result-kicker">Transaction-only observation</p>
+          <h2 id="result-title" tabindex="-1">Evidence result</h2>
+          <p class="result-summary" id="result-summary"></p>
+
+          <dl class="result-facts">
+            <div>
+              <dt>Transaction</dt>
+              <dd><code id="result-transaction-hash">—</code></dd>
+            </div>
+            <div>
+              <dt>Observed at</dt>
+              <dd id="result-checked-at">—</dd>
+            </div>
+            <div>
+              <dt>Receipt</dt>
+              <dd id="result-receipt">—</dd>
+            </div>
+            <div>
+              <dt>Finalized anchor</dt>
+              <dd id="result-anchor">—</dd>
+            </div>
+            <div>
+              <dt>Source agreement</dt>
+              <dd id="result-sources">—</dd>
+            </div>
+          </dl>
+
+          <section class="settlement-section" id="settlement-section" aria-labelledby="settlement-title" hidden>
+            <div class="settlement-heading">
+              <h3 id="settlement-title">Native-USDC event pairs</h3>
+              <span id="settlement-count">0 observed</span>
+            </div>
+            <div class="settlement-list" id="settlement-list"></div>
+            <p class="truncation-note" id="truncation-note" hidden>
+              Additional pairs were omitted by the bounded public response.
+            </p>
+          </section>
+
+          <div class="result-boundary" role="note">
+            <strong>Scope: transaction only</strong>
+            <p>
+              Expected x402 intent, recipient, amount, HTTP delivery, business effect,
+              provider consensus truth, and retry safety were not evaluated.
+            </p>
+          </div>
+
+          <button class="secondary-action" id="verify-again" type="button">Check another transaction</button>
+        </div>
+
+        <div class="verifier-error" id="verifier-error" hidden>
+          <span class="error-mark" aria-hidden="true">!</span>
+          <h2 id="error-title">Verification unavailable</h2>
+          <p id="error-message">
+            No transaction claim was made. Try the same public hash again in a moment.
+          </p>
+          <button class="secondary-action" id="retry-verification" type="button">Try again</button>
+        </div>
+
+        <p class="sr-only" id="verification-announcement" role="status" aria-live="polite"></p>
       </aside>
     </section>
 
     <section class="live-section section-shell" aria-labelledby="live-title">
       <div class="section-heading">
         <div>
-          <p class="section-index">00 / live surface</p>
+          <p class="section-index">01 / deployment surface</p>
           <h2 id="live-title">Same-origin status</h2>
         </div>
         <p class="section-intro">
@@ -122,9 +217,9 @@
             <span class="state-label" id="health-connection">checking</span>
           </div>
           <dl>
-            <div><dt>Containment</dt><dd id="health-status">not yet verified</dd></div>
+            <div><dt>Mode</dt><dd id="health-status">not yet verified</dd></div>
             <div><dt>Service</dt><dd id="health-service">—</dd></div>
-            <div><dt>Outbound requests</dt><dd id="health-outbound">—</dd></div>
+            <div><dt>Health-route reads</dt><dd id="health-outbound">—</dd></div>
           </dl>
         </article>
 
@@ -158,7 +253,7 @@
     <section class="section-shell" id="system" aria-labelledby="system-title">
       <div class="section-heading">
         <div>
-          <p class="section-index">01 / evidence system</p>
+          <p class="section-index">02 / evidence method</p>
           <h2 id="system-title">Four bounded layers</h2>
         </div>
         <p class="section-intro">
@@ -233,7 +328,7 @@
     <section class="section-shell" id="matrix" aria-labelledby="matrix-title">
       <div class="section-heading">
         <div>
-          <p class="section-index">02 / conformance</p>
+          <p class="section-index">03 / conformance</p>
           <h2 id="matrix-title">Nine deterministic outcomes</h2>
         </div>
         <p class="section-intro" id="matrix-note">
@@ -330,7 +425,7 @@
     <section class="section-shell limits-section" id="limits" aria-labelledby="limits-title">
       <div class="section-heading">
         <div>
-          <p class="section-index">03 / assurance boundary</p>
+          <p class="section-index">04 / assurance boundary</p>
           <h2 id="limits-title">What remains unproven</h2>
         </div>
         <p class="section-intro">
@@ -387,7 +482,7 @@
   <footer class="site-footer">
     <div>
       <strong>x402 Canary</strong>
-      <span>public evidence console · shadow only</span>
+      <span>live Base transaction verifier · observation only</span>
     </div>
     <p>
       Machine-readable surface contract: <a href="/llms.txt">llms.txt</a>
