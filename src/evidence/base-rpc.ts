@@ -4,7 +4,7 @@ import { BlockList, isIP } from "node:net";
 import { request as httpsRequest, type RequestOptions } from "node:https";
 
 import { BASE_MAINNET_NETWORK, BASE_USDC_ASSET } from "../contracts.js";
-import { canonicalJson } from "./canonical.js";
+import { canonicalJson, deriveAuthorizationIdentity } from "./canonical.js";
 import type {
   AuthorizationStateObservation,
   BaseReceiptLog,
@@ -70,6 +70,15 @@ const AUTHORIZATION_FIELDS = new Set([
 ]);
 const derivedRegistries = new WeakSet<object>();
 const resolvedSources = new WeakSet<object>();
+const collectedEvidence = new WeakSet<object>();
+const collectionContexts = new WeakMap<
+  BaseEvidenceCollection,
+  {
+    registry: BaseRpcSourceRegistry;
+    authorizationId: string;
+    requestedTransactionHash: string | null;
+  }
+>();
 
 export interface BaseRpcSourceManifestEntry {
   id: string;
@@ -176,6 +185,16 @@ export interface BaseEvidenceCollection {
   collectionHash: string;
 }
 
+export interface CollectedBaseEvidenceArtifact {
+  schemaVersion: "0.1";
+  registryHash: string;
+  collectionHash: string;
+  observationHash: string;
+  authorizationId: string;
+  requestedTransactionHash: string | null;
+  collection: BaseEvidenceCollection;
+}
+
 export class BaseRpcConfigurationError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -244,6 +263,61 @@ function assertDerivedRegistry(registry: BaseRpcSourceRegistry): void {
   if (hashCanonical(REGISTRY_DOMAIN, registry.manifest) !== registry.registryHash) {
     throw new BaseRpcConfigurationError("REGISTRY_INTEGRITY_MISMATCH");
   }
+}
+
+/**
+ * Assert that a collection was produced by this process from the exact branded
+ * registry. Serialized lookalikes deliberately lose this runtime authority.
+ */
+export function assertCollectedBaseEvidence(
+  registry: BaseRpcSourceRegistry,
+  collection: BaseEvidenceCollection,
+): BaseEvidenceCollection {
+  assertDerivedRegistry(registry);
+  if (
+    !isRecord(collection) ||
+    !collectedEvidence.has(collection) ||
+    collectionContexts.get(collection)?.registry !== registry
+  ) throw new BaseEvidenceCollectionError("COLLECTION_NOT_RUNTIME_VERIFIED");
+  if (collection.registryHash !== registry.registryHash) {
+    throw new BaseEvidenceCollectionError("COLLECTION_REGISTRY_MISMATCH");
+  }
+  const { collectionHash, ...unsigned } = collection;
+  if (hashCanonical(COLLECTION_DOMAIN, unsigned) !== collectionHash) {
+    throw new BaseEvidenceCollectionError("COLLECTION_INTEGRITY_MISMATCH");
+  }
+  const observationPayload = {
+    finalizedAnchor: collection.finalizedAnchor,
+    nativeUsdc: collection.nativeUsdc,
+    sources: collection.sources,
+    receiptObservations: collection.receiptObservations,
+    authorizationStateObservations: collection.authorizationStateObservations,
+    readiness: collection.readiness,
+    reasons: collection.reasons,
+  };
+  if (
+    hashCanonical("x402-canary:base-observations:v0.1", observationPayload) !==
+    collection.observationHash
+  ) throw new BaseEvidenceCollectionError("COLLECTION_OBSERVATION_INTEGRITY_MISMATCH");
+  return collection;
+}
+
+/** Export a private-storage audit artifact only from a runtime-verified collection. */
+export function baseEvidenceArtifactFromCollection(
+  registry: BaseRpcSourceRegistry,
+  collection: BaseEvidenceCollection,
+): CollectedBaseEvidenceArtifact {
+  assertCollectedBaseEvidence(registry, collection);
+  const context = collectionContexts.get(collection)!;
+  return deepFreeze({
+    schemaVersion: "0.1" as const,
+    registryHash: registry.registryHash,
+    collectionHash: collection.collectionHash,
+    observationHash: collection.observationHash,
+    authorizationId: context.authorizationId,
+    requestedTransactionHash: context.requestedTransactionHash,
+    collection: clone(collection),
+  });
 }
 
 function requireSortedUnique(values: unknown, label: string): string[] {
@@ -957,6 +1031,7 @@ export async function collectBaseEvidence(
     throw new BaseEvidenceCollectionError("COLLECTION_REQUEST_REQUIRED_FIELD_MISSING");
   }
   const checkedAuthorization = validateAuthorizationForCollection(request.authorization);
+  const authorizationId = deriveAuthorizationIdentity(checkedAuthorization.authorization).id;
   const collectedAt = validateCollectedAt(request.collectedAt);
   const collectedAtSeconds = BigInt(Math.floor(Date.parse(collectedAt) / 1_000));
   const transactionHash =
@@ -1220,7 +1295,7 @@ export async function collectBaseEvidence(
     ...observationPayload,
     observationHash,
   };
-  return {
+  const collection: BaseEvidenceCollection = {
     ...unsigned,
     nativeUsdc: {
       ...unsigned.nativeUsdc,
@@ -1230,4 +1305,12 @@ export async function collectBaseEvidence(
     },
     collectionHash: hashCanonical(COLLECTION_DOMAIN, unsigned),
   };
+  deepFreeze(collection);
+  collectedEvidence.add(collection);
+  collectionContexts.set(collection, {
+    registry,
+    authorizationId,
+    requestedTransactionHash: transactionHash ?? null,
+  });
+  return collection;
 }

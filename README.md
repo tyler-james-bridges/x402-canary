@@ -14,6 +14,7 @@ This branch is in source-containment and deterministic-fixture mode:
 - The evidence CLI evaluates sanitized files only; it has no RPC, wallet, signer, URL-fetch, or payment option.
 - The separate `base:collect` operator CLI performs registry-pinned, read-only Base RPC collection; it exposes no wallet, signer, transaction-submission, or payment method and is not imported by a public route.
 - The separate `effect:verify` CLI performs local Ed25519 verification against an out-of-band registry hash; it exposes no network, database-write, retry, wallet, signer, transaction, or payment path.
+- Journal-bound bundle v0.2 persists branded Base/effect inputs and deterministic shadow results behind two adjacent journal commits; every execution flag remains false.
 - Tests and CI make no production payment.
 
 The source changes have not been deployed or independently verified on the live Vercel and Bankr surfaces. Do not describe the production service as contained until deployment, Bankr unpublish/disable, and post-deployment verification are complete.
@@ -45,7 +46,7 @@ The deterministic reconciliation fixtures separately model settlement, response 
 Evidence Kernel v0.1 adds the local evidence-producing primitives that were previously missing:
 
 - canonical, domain-separated operation and exact EIP-3009 authorization IDs;
-- a private-mode, append-only, hash-linked JSONL journal with restart/tamper/torn-write validation and serialized in-process appends;
+- a private-mode, append-only, hash-linked JSONL journal with a stable journal identity, cross-process cooperating-writer sentinel, head compare-and-set, deterministic replay, and restart/tamper/torn-write validation;
 - a pure Base evaluator over injected observations that pins chain ID and native USDC, verifies canonical receipt/finality facts, and requires an adjacent `AuthorizationUsed(authorizer, nonce)` plus exact `Transfer(from, to, value)` pair;
 - finalized, independently agreeing `authorizationState` snapshots for authoritative settlement absence;
 - authoritative business-effect reconciliation with duplicate and contradiction detection;
@@ -53,7 +54,9 @@ Evidence Kernel v0.1 adds the local evidence-producing primitives that were prev
 
 Base Collector v0.1 now establishes the Base observations through a hashed two-source registry, HTTPS origin and DNS policy, a pinned Base genesis checkpoint, a unanimous shared `finalized` block, EIP-1898 state reads, and an upgrade-aware native-USDC code allowlist. Its sanitized live conformance receipt is checked in.
 
-Effect Authority v0.1 adds a separate Ed25519 verification boundary. It content-addresses operator policy, derives the operation/query/finality coordinates locally, pins canonical public keys and key lifecycles, requires a complete linearizable post-horizon marker for authoritative absence, and converts only runtime-branded verification results into authoritative observations. A synthetic signed fixture is checked in. The legacy v0.1 kernel remains deliberately separate and does not upgrade its assurance merely because either authority artifact exists; the v0.2 wrapper must bind them into a journal-linked bundle.
+Effect Authority v0.1 adds a separate Ed25519 verification boundary. It content-addresses operator policy, derives the operation/query/finality coordinates locally, pins canonical public keys and key lifecycles, requires a complete linearizable post-horizon marker for authoritative absence, and converts only runtime-branded verification results into authoritative observations. A synthetic signed fixture is checked in. The legacy v0.1 kernel remains deliberately separate and does not upgrade its assurance merely because either authority artifact exists.
+
+Journal-bound bundle v0.2 now binds the unique journaled attempt start, the authorization-bound Base audit artifact, timestamped signed-effect audit artifacts, the exact derived v0.1 evaluator input, and its deterministic result into immutable artifacts and two globally adjacent journal commits. A separate non-circular receipt supports offline local-integrity replay and deterministic receipt recovery. Its assurance explicitly discloses caller-declared attempt predicates, trusted-local-writer dependence, lack of historical transport/signature reauthentication, lack of an external anti-rollback checkpoint, and disabled action/payment/transaction/retry execution.
 
 ## Run locally
 
@@ -124,9 +127,10 @@ An identical signed-request replay is safe only after the route's replay contrac
 
 Evidence Kernel v0.1 is a deterministic local evaluator, not authorization to turn payment back on. Paid execution remains blocked until at least:
 
-- production RPC sources or a self-validating node replace the development public-provider pair, and their registry/collection digest is enforced by the v0.2 kernel rather than accepted as input data;
+- production RPC sources or a self-validating node replace the development public-provider pair, with live Base fork, provider-independence, and native-USDC upgrade conformance;
 - an operator-owned read-only system-of-record adapter emits the implemented signed effect-attestation format and its uniqueness/closure claims are validated against the real store;
-- journal records and their verified head are bound to persisted terminal bundles, with a documented single-writer or cross-process locking model;
+- the cooperating-process sentinel is replaced or operationally wrapped with an OS advisory lock or transactional store, and receipts are anchored in external WORM/signed checkpoint storage to prevent complete rollback;
+- caller-declared attempt predicates gain configured authority evidence, and offline verification receives separately pinned registries when historical signature re-verification is required;
 - settlement submitter and recipient/router classification is implemented;
 - Base fork/RPC conformance and upgrade-aware native-USDC event-order coverage pass for the restricted slice;
 - delivery evidence is independently verified wherever delivery is a separate required outcome;
@@ -146,6 +150,7 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 - `docs/evidence-kernel-v0.1.md` — evidence contracts, trust boundary, verdict rules, and known limits.
 - `docs/base-collector-v0.1.md` — source registry, HTTPS/DNS boundary, finalized snapshot rules, and live conformance receipt.
 - `docs/effect-authority-v0.1.md` — Ed25519 registry/policy boundary, signed outcomes, key lifecycle, and operator-adapter limits.
+- `docs/journal-bound-bundles-v0.2.md` — artifact DAG, two journal anchors, exact replay, crash recovery, local-integrity verification, and remaining anti-rollback/authority boundaries.
 - `src/__tests__/` — deterministic containment, challenge, browser, proxy, and reconciliation fixtures.
 
 ## Deployment

@@ -10,6 +10,8 @@ import {
   BASE_GENESIS_BLOCK_HASH,
   CIRCLE_PROXY_IMPLEMENTATION_SLOT,
   HttpsBaseRpcTransport,
+  assertCollectedBaseEvidence,
+  baseEvidenceArtifactFromCollection,
   collectBaseEvidence,
   deriveBaseRpcSourceRegistry,
   isPublicRpcAddress,
@@ -19,6 +21,7 @@ import {
   type BaseRpcSourceManifest,
 } from "../evidence/base-rpc.js";
 import { EIP3009_AUTHORIZATION_USED_TOPIC, ERC20_TRANSFER_TOPIC, evaluateBaseSettlement } from "../evidence/base-settlement.js";
+import { deriveAuthorizationIdentity } from "../evidence/canonical.js";
 import type { ExactAuthorizationDescriptor, JsonValue } from "../evidence/types.js";
 
 const HASH_A = `0x${"a".repeat(64)}`;
@@ -405,6 +408,34 @@ test("collector emits deterministic unanimous finalized absence observations", a
     mock.calls
       .filter((call) => call.method === "eth_call")
       .every((call) => (call.params[1] as Record<string, unknown>).requireCanonical === true),
+  );
+});
+
+test("only a runtime-branded collection exports an authorization-bound audit artifact", async () => {
+  const registry = deriveBaseRpcSourceRegistry(manifest());
+  const collection = await collectBaseEvidence(registry, new MockRpc(), {
+    authorization,
+    collectedAt: "2026-08-04T02:00:00.000Z",
+    transactionHash: HASH_B,
+  });
+  assert.equal(assertCollectedBaseEvidence(registry, collection), collection);
+  const artifact = baseEvidenceArtifactFromCollection(registry, collection);
+  assert.equal(artifact.authorizationId, deriveAuthorizationIdentity(authorization).id);
+  assert.equal(artifact.requestedTransactionHash, HASH_B);
+  assert.equal(artifact.collectionHash, collection.collectionHash);
+  assert.equal(Object.isFrozen(artifact), true);
+  assert.throws(
+    () => baseEvidenceArtifactFromCollection(registry, structuredClone(collection)),
+    (error: unknown) =>
+      error instanceof BaseEvidenceCollectionError &&
+      error.code === "COLLECTION_NOT_RUNTIME_VERIFIED",
+  );
+  const equivalentRegistry = deriveBaseRpcSourceRegistry(manifest());
+  assert.throws(
+    () => assertCollectedBaseEvidence(equivalentRegistry, collection),
+    (error: unknown) =>
+      error instanceof BaseEvidenceCollectionError &&
+      error.code === "COLLECTION_NOT_RUNTIME_VERIFIED",
   );
 });
 

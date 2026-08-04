@@ -52,6 +52,7 @@ git diff --check
 - `src/evidence/base-rpc.ts`: strict registry-bound, read-only Base collector with HTTPS/DNS, finality, checkpoint, and native-USDC identity checks
 - `src/base-evidence-collect-cli.ts`: explicit operator-only Base collection CLI; never import it into a public handler
 - `src/evidence/effect-authority.ts`: strict local Ed25519 authority/policy verification; only branded verified results may create authoritative effect observations
+- `src/evidence/artifact-store.ts` and `src/evidence/journal-bundle.ts`: immutable v0.2 evidence artifacts, journal-head CAS closure, shadow-only bundles, offline integrity replay, and receipt recovery
 - `src/effect-attestation-verify-cli.ts`: file-only signed-effect verifier with an out-of-band registry hash pin; never import it into a public handler
 - `examples/evidence-kernel-v0.1.*.json`: sanitized input and exact expected bundle
 - `examples/base-*.json`: secret-free Base registry/request and historical live conformance receipt
@@ -65,13 +66,13 @@ The local v0.1 kernel now implements canonical request/authorization IDs, an app
 
 Do not enable paid execution until, at minimum:
 
-1. The v0.2 kernel verifies and binds the Base registry/collection digest rather than accepting raw v0.1 source labels; production sources must be distinct failure domains rather than a development public-RPC pair.
+1. Production Base sources must be distinct reviewed failure domains rather than a development public-RPC pair, and their fork/upgrade behavior must pass live conformance.
 2. An operator-owned read-only system-of-record adapter emits the implemented signed-effect format, and its real uniqueness/linearizable-closure claims pass integration review.
-3. The verified journal head is bound into persisted terminal bundles, with a documented cross-process single-writer model and rollback checkpoint.
-4. Settlement submitter/router classification and independent delivery evidence are implemented where applicable.
-5. Base fork/RPC conformance and native-USDC upgrade/event-order coverage pass.
+3. The v0.2 cooperating-process sentinel is replaced or wrapped by an OS advisory/transactional lock, and journal receipts are externally checkpointed against complete rollback.
+4. Caller-declared attempt predicates gain configured authority evidence; offline signature re-verification receives separately pinned registries where required.
+5. Settlement submitter/router classification and independent delivery evidence are implemented where applicable.
 6. The integrated adapters receive an external security review.
 
 Never promote a caller-supplied source label or `authoritative: true` flag into trusted evidence without the corresponding configured adapter.
 
-Evidence Kernel v0.1 intentionally remains a legacy prevalidated-input schema with `externalAuthorityProven: false`. Do not widen it. The future v0.2 path must accept signed envelopes or runtime-branded verification results and bind them to controlled journal timestamps.
+Evidence Kernel v0.1 intentionally remains a legacy prevalidated-input schema with `externalAuthorityProven: false`. Do not widen it. Journal-bound v0.2 accepts runtime-branded Base/effect results, derives the legacy input, and binds it to controlled journal timestamps, but it remains shadow-only and grants no execution authority.

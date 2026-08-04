@@ -128,6 +128,7 @@ interface QueryInternals {
 const registryInternals = new WeakMap<EffectAuthorityRegistry, RegistryInternals>();
 const queryInternals = new WeakMap<ResolvedEffectQuery, QueryInternals>();
 const verifiedObservations = new WeakMap<VerifiedEffectAttestation, readonly EffectObservation[]>();
+const verifiedAuditArtifacts = new WeakMap<VerifiedEffectAttestation, EffectAuthorityAuditArtifact>();
 
 export interface EffectAuthorityContractPolicy {
   authorityId: string;
@@ -273,7 +274,9 @@ export interface VerifiedEffectAttestation {
   resolutionHash: string;
   attestationHash: string;
   operationId: string;
+  operationStartedAt: string;
   queryKeyHash: string;
+  finalAfter: string;
   authorityId: string;
   keyId: string;
   adapterId: string;
@@ -286,6 +289,17 @@ export interface VerifiedEffectAttestation {
     authoritySignatureVerified: true;
     paymentExecutionEnabled: false;
   };
+}
+
+export interface EffectAuthorityAuditArtifact {
+  schemaVersion: "0.1";
+  registryHash: string;
+  contractId: string;
+  resolutionHash: string;
+  attestationHash: string;
+  verifiedAt: string;
+  query: ResolvedEffectQuery;
+  attestation: SignedEffectAttestation;
 }
 
 export class EffectAuthorityError extends Error {
@@ -1086,7 +1100,9 @@ export function verifyEffectAttestation(
     resolutionHash: query.resolutionHash,
     attestationHash: hashCanonical(ATTESTATION_HASH_DOMAIN, attestation),
     operationId: query.operationId,
+    operationStartedAt: query.operationStartedAt,
     queryKeyHash: query.queryKeyHash,
+    finalAfter: query.finalAfter,
     authorityId: attestation.payload.authorityId,
     keyId: attestation.protected.keyId,
     adapterId: attestation.payload.adapterId,
@@ -1101,8 +1117,19 @@ export function verifyEffectAttestation(
     },
   };
   deepFreeze(verified);
+  const auditArtifact: EffectAuthorityAuditArtifact = deepFreeze({
+    schemaVersion: "0.1" as const,
+    registryHash: registry.registryHash,
+    contractId: query.contractId,
+    resolutionHash: query.resolutionHash,
+    attestationHash: verified.attestationHash,
+    verifiedAt,
+    query,
+    attestation: structuredClone(attestation),
+  });
   verifiedAttestations.add(verified);
   verifiedObservations.set(verified, observations);
+  verifiedAuditArtifacts.set(verified, auditArtifact);
   return verified;
 }
 
@@ -1121,4 +1148,14 @@ export function effectObservationsFromVerifiedAttestation(
   const observations = verifiedObservations.get(verified);
   if (!observations) fail("ATTESTATION_VERIFICATION_STATE_MISSING");
   return observations;
+}
+
+/** Export a private-storage audit artifact only from a branded verification result. */
+export function effectAuthorityArtifactFromVerifiedAttestation(
+  verified: VerifiedEffectAttestation,
+): EffectAuthorityAuditArtifact {
+  if (!verifiedAttestations.has(verified)) fail("ATTESTATION_NOT_VERIFIED");
+  const artifact = verifiedAuditArtifacts.get(verified);
+  if (!artifact) fail("ATTESTATION_VERIFICATION_STATE_MISSING");
+  return artifact;
 }

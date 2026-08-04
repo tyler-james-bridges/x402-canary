@@ -35,6 +35,8 @@ export type JournalEventKind =
   | "authorization_transmitted"
   | "settlement_observed"
   | "effect_observed"
+  | "kernel_input_committed"
+  | "kernel_bundle_committed"
   | "attempt_closed";
 
 export interface JournalEventInput {
@@ -47,6 +49,7 @@ export interface JournalEventInput {
 }
 
 export interface JournalRecord extends JournalEventInput {
+  journalId: string;
   sequence: number;
   previousHash: string | null;
   recordHash: string;

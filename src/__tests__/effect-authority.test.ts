@@ -9,6 +9,7 @@ import {
   computeEffectAuthorityContractId,
   computeEffectAuthorityKeyId,
   deriveEffectAuthorityRegistry,
+  effectAuthorityArtifactFromVerifiedAttestation,
   effectObservationsFromVerifiedAttestation,
   resolveEffectQuery,
   verifyEffectAttestation,
@@ -296,6 +297,27 @@ test("a valid signed one outcome becomes one authoritative committed effect", ()
     effectIds: [HASH_A],
     reasons: [],
   });
+});
+
+test("only a runtime-verified effect exports its signed timestamped audit artifact", () => {
+  const context = runtime();
+  const signed = makeAttestation(context);
+  const verified = verifyEffectAttestation(
+    context.registry,
+    context.query,
+    signed,
+    VERIFIED_AT,
+  );
+  const artifact = effectAuthorityArtifactFromVerifiedAttestation(verified);
+  assert.equal(artifact.attestationHash, verified.attestationHash);
+  assert.equal(artifact.verifiedAt, VERIFIED_AT);
+  assert.equal(artifact.query.operationStartedAt, STARTED_AT);
+  assert.deepEqual(artifact.attestation, signed);
+  assertDeepFrozen(artifact);
+  assert.throws(
+    () => effectAuthorityArtifactFromVerifiedAttestation(structuredClone(verified)),
+    errorCode("ATTESTATION_NOT_VERIFIED"),
+  );
 });
 
 test("a signed zero is authoritative only with complete linearizable post-horizon closure", () => {
