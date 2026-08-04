@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "0.1",
+  "evaluatedAt": "2026-08-03T18:15:00.000Z",
+  "operation": {
+    "url": "https://merchant.example/orders",
+    "method": "POST",
+    "headers": {
+      "content-type": "application/json",
+      "idempotency-key": "order-0001"
+    },
+    "body": {
+      "orderId": "order-0001",
+      "sku": "agent-credit",
+      "quantity": 1
+    }
+  },
+  "authorization": {
+    "networkId": "eip155:8453",
+    "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "from": "0x1111111111111111111111111111111111111111",
+    "to": "0x2222222222222222222222222222222222222222",
+    "valueAtomic": "10000",
+    "validAfter": "1700000000",
+    "validBefore": "1700000100",
+    "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "attempt": {
+    "authorizationCreated": true,
+    "preflightPassed": true,
+    "policyRejectedBeforeAuthorization": false,
+    "authorizationTransmitted": "pass",
+    "signingRejected": false,
+    "deliveryContractApplicable": false,
+    "delivery": "not_applicable",
+    "effectContractApplicable": true
+  },
+  "minimumConfirmations": 12,
+  "receiptObservations": [
+    {
+      "networkId": "eip155:8453",
+      "source": "sanitized-base-rpc",
+      "observedAt": "2026-08-03T18:05:00.000Z",
+      "observedHeadBlockNumber": "1011",
+      "canonicalBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "receipt": {
+        "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "blockNumber": "1000",
+        "status": "success",
+        "logs": [
+          {
+            "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "topics": [
+              "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+              "0x0000000000000000000000001111111111111111111111111111111111111111",
+              "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            "data": "0x",
+            "logIndex": 0,
+            "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000001111111111111111111111111111111111111111",
+              "0x0000000000000000000000002222222222222222222222222222222222222222"
+            ],
+            "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+            "logIndex": 1,
+            "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ]
+      }
+    }
+  ],
+  "authorizationStateObservations": [],
+  "effectObservations": [
+    {
+      "operationId": "sha256:9535c84949d5f229584fa75ca1d78678863e121bd518f4d923ad3f67f5ad972d",
+      "source": "operator-system-of-record",
+      "queryKey": "idempotency-key/order-0001",
+      "effectType": "order.created",
+      "status": "committed",
+      "authoritative": true,
+      "observedAt": "2026-08-03T18:12:00.000Z",
+      "finalAfter": "2026-08-03T18:10:00.000Z",
+      "effectId": "order-0001",
+      "payloadHash": "sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+    }
+  ]
+}

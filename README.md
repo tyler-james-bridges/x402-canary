@@ -11,6 +11,7 @@ This branch is in source-containment and deterministic-fixture mode:
 - `npm start` serves only the containment page on `127.0.0.1`; scheduled endpoint checks are disabled.
 - The source Bankr manifest advertises no paid services.
 - The CLI rejects `--pay` before loading a contract, and the executable AgentCash adapter is a fail-closed stub with no subprocess or wallet path.
+- The evidence CLI evaluates sanitized files only; it has no RPC, wallet, signer, URL-fetch, or payment option.
 - Tests and CI make no production payment.
 
 The source changes have not been deployed or independently verified on the live Vercel and Bankr surfaces. Do not describe the production service as contained until deployment, Bankr unpublish/disable, and post-deployment verification are complete.
@@ -39,7 +40,16 @@ Contract compatibility requires one unambiguous requirement matching all of:
 
 The deterministic reconciliation fixtures separately model settlement, response delivery, and business effect. They cover unresolved authorization transmission, late settlement, response loss after an effect, identical HTTP 502 shapes before and after submission, authoritative zero-settlement closure, and concurrent identical-key replay.
 
-These are policy/decision fixtures, not a substitute for an observation journal or real Base receipt verification.
+Evidence Kernel v0.1 adds the local evidence-producing primitives that were previously missing:
+
+- canonical, domain-separated operation and exact EIP-3009 authorization IDs;
+- a private-mode, append-only, hash-linked JSONL journal with restart/tamper/torn-write validation and serialized in-process appends;
+- a pure Base evaluator over injected observations that pins chain ID and native USDC, verifies canonical receipt/finality facts, and requires an adjacent `AuthorizationUsed(authorizer, nonce)` plus exact `Transfer(from, to, value)` pair;
+- finalized, independently agreeing `authorizationState` snapshots for authoritative settlement absence;
+- authoritative business-effect reconciliation with duplicate and contradiction detection;
+- deterministic input and bundle hashes, conservative terminal states, separate same-authorization/new-authorization retry verdicts, and the one-settlement/one-effect invariant.
+
+The evaluators do not collect evidence themselves. An RPC adapter must establish the Base observations, and an operator-owned system-of-record adapter must establish effect authority. A caller-supplied source label or `authoritative: true` flag is not independently trustworthy by itself.
 
 ## Run locally
 
@@ -50,6 +60,14 @@ npm test
 npm run typecheck
 npm run build
 ```
+
+Recompute the sanitized Evidence Kernel example without making a network request:
+
+```bash
+npm run --silent evidence -- examples/evidence-kernel-v0.1.input.json
+```
+
+The output should exactly match `examples/evidence-kernel-v0.1.bundle.json`.
 
 The packaged contract can perform a live, unpaid challenge request when run manually:
 
@@ -76,16 +94,16 @@ An identical signed-request replay is safe only after the route's replay contrac
 
 ## Not yet production-ready
 
-Paid execution remains blocked until at least the following are implemented and independently reviewed:
+Evidence Kernel v0.1 is a deterministic local evaluator, not authorization to turn payment back on. Paid execution remains blocked until at least:
 
-- append-only, hash-linked observation journaling with secret redaction;
-- independent Base chain ID, receipt, finality, and canonical-block verification;
-- exact native-USDC `Transfer` verification from payer to the advertised recipient for the selected atomic amount;
-- settlement-submitter and recipient/router classification;
-- operator-authoritative business-effect reconciliation;
-- persisted terminal evidence with external recomputation;
-- deterministic and Base fork/RPC conformance coverage for the restricted paid slice;
-- deployed Vercel verification and separate Bankr service unpublish/disable verification.
+- independently configured Base RPC collectors produce and cross-check the injected receipt, canonical-head, and `authorizationState` facts;
+- an operator-owned system-of-record adapter produces effect observations and establishes what `authoritative` means for each effect type;
+- journal records and their verified head are bound to persisted terminal bundles, with a documented single-writer or cross-process locking model;
+- settlement submitter and recipient/router classification is implemented;
+- Base fork/RPC conformance and upgrade-aware native-USDC event-order coverage pass for the restricted slice;
+- delivery evidence is independently verified wherever delivery is a separate required outcome;
+- the integrated adapters receive an external security review;
+- deployed Vercel containment and separate Bankr service pause/unpublish status are verified.
 
 Facilitator or client metadata may be retained as a provider claim, but it cannot independently satisfy Base settlement or delivery.
 
@@ -96,6 +114,8 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 - `contracts/` — pinned acceptance contracts.
 - `src/x402-challenge.ts` — exact-only challenge and no-spend predicate evaluation.
 - `src/reconciliation-policy.ts` — pure terminal and retry-safety derivation.
+- `src/evidence/`, `src/evidence-cli.ts`, `examples/` — Evidence Kernel v0.1 primitives, CLI, and sanitized recomputation pair.
+- `docs/evidence-kernel-v0.1.md` — evidence contracts, trust boundary, verdict rules, and known limits.
 - `src/__tests__/` — deterministic containment, challenge, browser, proxy, and reconciliation fixtures.
 
 ## Deployment

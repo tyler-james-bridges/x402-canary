@@ -1,0 +1,357 @@
+[
+  {
+    "name": "one authoritative commit dedupes identical evidence",
+    "operationId": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "observations": [
+      {
+        "operationId": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-001",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:05:00.000Z",
+        "finalAfter": "2026-08-03T18:10:00.000Z",
+        "effectId": "order-001",
+        "payloadHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "operationId": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-001",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:05:00.000Z",
+        "finalAfter": "2026-08-03T18:10:00.000Z",
+        "effectId": "order-001",
+        "payloadHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "expected": {
+      "status": "committed",
+      "authoritative": true,
+      "effectCount": 1,
+      "effectIds": ["order-001"],
+      "reasons": []
+    }
+  },
+  {
+    "name": "delayed authoritative absence closes zero effect",
+    "operationId": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "observations": [
+      {
+        "operationId": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-002",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:11:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "absent",
+      "authoritative": true,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": []
+    }
+  },
+  {
+    "name": "premature authoritative absence remains unknown",
+    "operationId": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "observations": [
+      {
+        "operationId": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-003",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:09:59Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "unknown",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["ABSENCE_BEFORE_FINAL_AFTER", "NO_AUTHORITATIVE_EFFECT_EVIDENCE"]
+    }
+  },
+  {
+    "name": "non-authoritative absence remains unknown",
+    "operationId": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "observations": [
+      {
+        "operationId": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "source": "vendor-response-metadata",
+        "queryKey": "idempotency-key/order-004",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": false,
+        "observedAt": "2026-08-03T18:15:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "unknown",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["ABSENCE_NOT_AUTHORITATIVE", "NO_AUTHORITATIVE_EFFECT_EVIDENCE"]
+    }
+  },
+  {
+    "name": "unknown observation never proves absence",
+    "operationId": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "observations": [
+      {
+        "operationId": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-005",
+        "effectType": "order.created",
+        "status": "unknown",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:15:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "unknown",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["EFFECT_STATUS_UNKNOWN", "NO_AUTHORITATIVE_EFFECT_EVIDENCE"]
+    }
+  },
+  {
+    "name": "distinct authoritative effect ids are a duplicate",
+    "operationId": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "observations": [
+      {
+        "operationId": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-006",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:05:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z",
+        "effectId": "order-006-a",
+        "payloadHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "operationId": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-006",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:06:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z",
+        "effectId": "order-006-b",
+        "payloadHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ],
+    "expected": {
+      "status": "duplicate",
+      "authoritative": true,
+      "effectCount": 2,
+      "effectIds": ["order-006-a", "order-006-b"],
+      "reasons": ["MULTIPLE_EFFECTS_COMMITTED"]
+    }
+  },
+  {
+    "name": "committed effect and final authoritative absence contradict",
+    "operationId": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "observations": [
+      {
+        "operationId": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-007",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:05:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z",
+        "effectId": "order-007",
+        "payloadHash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      {
+        "operationId": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-007",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:11:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 1,
+      "effectIds": ["order-007"],
+      "reasons": ["COMMITTED_ABSENCE_CONFLICT"]
+    }
+  },
+  {
+    "name": "observation for another operation is rejected",
+    "operationId": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "observations": [
+      {
+        "operationId": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-008",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:11:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["WRONG_OPERATION_ID"]
+    }
+  },
+  {
+    "name": "malformed committed payload hash is rejected",
+    "operationId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "observations": [
+      {
+        "operationId": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-009",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:05:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z",
+        "effectId": "order-009",
+        "payloadHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["INVALID_COMMITTED_PAYLOAD_HASH"]
+    }
+  },
+  {
+    "name": "malformed observed timestamp is rejected",
+    "operationId": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "observations": [
+      {
+        "operationId": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-010",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": true,
+        "observedAt": "2026-02-30T18:11:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["INVALID_OBSERVED_AT"]
+    }
+  },
+  {
+    "name": "malformed final timestamp is rejected",
+    "operationId": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "observations": [
+      {
+        "operationId": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "source": "operator-db",
+        "queryKey": "idempotency-key/order-011",
+        "effectType": "order.created",
+        "status": "absent",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:11:00Z",
+        "finalAfter": "not-a-timestamp"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["INVALID_FINAL_AFTER"]
+    }
+  },
+  {
+    "name": "same effect id with different payloads contradicts",
+    "operationId": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "observations": [
+      {
+        "operationId": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "source": "operator-db-primary",
+        "queryKey": "idempotency-key/order-012",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:05:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z",
+        "effectId": "order-012",
+        "payloadHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "operationId": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "source": "operator-db-replica",
+        "queryKey": "idempotency-key/order-012",
+        "effectType": "order.created",
+        "status": "committed",
+        "authoritative": true,
+        "observedAt": "2026-08-03T18:06:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z",
+        "effectId": "order-012",
+        "payloadHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 1,
+      "effectIds": ["order-012"],
+      "reasons": ["EFFECT_PAYLOAD_HASH_CONFLICT"]
+    }
+  },
+  {
+    "name": "blank effect coordinates are rejected",
+    "operationId": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "observations": [
+      {
+        "operationId": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "source": " ",
+        "queryKey": "",
+        "effectType": "\n",
+        "status": "unknown",
+        "authoritative": false,
+        "observedAt": "2026-08-03T18:11:00Z",
+        "finalAfter": "2026-08-03T18:10:00Z"
+      }
+    ],
+    "expected": {
+      "status": "contradiction",
+      "authoritative": false,
+      "effectCount": 0,
+      "effectIds": [],
+      "reasons": ["INVALID_EFFECT_QUERY_KEY", "INVALID_EFFECT_SOURCE", "INVALID_EFFECT_TYPE"]
+    }
+  }
+]

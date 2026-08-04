@@ -1,0 +1,533 @@
+[
+  {
+    "name": "valid finalized native Base USDC settlement",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt": {
+          "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "blockNumber": "1000",
+          "status": "success",
+          "logs": [
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ],
+              "data": "0x",
+              "logIndex": 0,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+              "logIndex": 1,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      },
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-b",
+        "observedAt": "2026-08-03T12:00:01.000Z",
+        "observedHeadBlockNumber": "1013",
+        "canonicalBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt": {
+          "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "blockNumber": "1000",
+          "status": "success",
+          "logs": [
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ],
+              "data": "0x",
+              "logIndex": 0,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+              "logIndex": 1,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      }
+    ],
+    "authorizationStateObservations": [
+      {
+        "networkId": "eip155:8453",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "source": "base-rpc-a",
+        "authorizer": "0x1111111111111111111111111111111111111111",
+        "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "used": true,
+        "observedBlockNumber": "1000",
+        "observedBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "observedBlockTimestamp": "1700000050",
+        "observedHeadBlockNumber": "1011"
+      },
+      {
+        "networkId": "eip155:8453",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "source": "base-rpc-b",
+        "authorizer": "0x1111111111111111111111111111111111111111",
+        "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "used": true,
+        "observedBlockNumber": "1000",
+        "observedBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "observedBlockTimestamp": "1700000050",
+        "observedHeadBlockNumber": "1011"
+      }
+    ],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "confirmed",
+      "authoritative": true,
+      "settlementCount": 1,
+      "confirmations": 12,
+      "reason": "SETTLEMENT_CONFIRMED"
+    }
+  },
+  {
+    "name": "matching settlement pending finality",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1002",
+        "canonicalBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt": {
+          "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "blockNumber": "1000",
+          "status": "success",
+          "logs": [
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ],
+              "data": "0x",
+              "logIndex": 0,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+              "logIndex": 1,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      }
+    ],
+    "authorizationStateObservations": [],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "pending_finality",
+      "authoritative": false,
+      "settlementCount": 1,
+      "confirmations": 3,
+      "reason": "MINIMUM_CONFIRMATIONS_NOT_REACHED"
+    }
+  },
+  {
+    "name": "wrong transfer value mismatch",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt": {
+          "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "blockNumber": "1000",
+          "status": "success",
+          "logs": [
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ],
+              "data": "0x",
+              "logIndex": 0,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002711",
+              "logIndex": 1,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      }
+    ],
+    "authorizationStateObservations": [],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "mismatch",
+      "authoritative": false,
+      "settlementCount": 0,
+      "confirmations": 0,
+      "reason": "TRANSFER_VALUE_MISMATCH"
+    }
+  },
+  {
+    "name": "duplicate matching transfers",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt": {
+          "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "blockNumber": "1000",
+          "status": "success",
+          "logs": [
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ],
+              "data": "0x",
+              "logIndex": 0,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+              "logIndex": 1,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+              "logIndex": 2,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      }
+    ],
+    "authorizationStateObservations": [],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "duplicate",
+      "authoritative": false,
+      "settlementCount": 2,
+      "confirmations": 12,
+      "reason": "DUPLICATE_MATCHING_TRANSFERS"
+    }
+  },
+  {
+    "name": "canonical block hash reorg mismatch",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "receipt": {
+          "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "blockNumber": "1000",
+          "status": "success",
+          "logs": [
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0x98de503528ee59b575ef0c0a2576a82497bfc029a5685b209e9ec333479b10a5",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              ],
+              "data": "0x",
+              "logIndex": 0,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "topics": [
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                "0x0000000000000000000000001111111111111111111111111111111111111111",
+                "0x0000000000000000000000002222222222222222222222222222222222222222"
+              ],
+              "data": "0x0000000000000000000000000000000000000000000000000000000000002710",
+              "logIndex": 1,
+              "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ]
+        }
+      }
+    ],
+    "authorizationStateObservations": [],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "mismatch",
+      "authoritative": false,
+      "settlementCount": 0,
+      "confirmations": 0,
+      "reason": "CANONICAL_BLOCK_HASH_MISMATCH"
+    }
+  },
+  {
+    "name": "missing receipt and state observations",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [],
+    "authorizationStateObservations": [],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "unknown",
+      "authoritative": false,
+      "settlementCount": 0,
+      "confirmations": 0,
+      "reason": "RECEIPT_OBSERVATIONS_MISSING"
+    }
+  },
+  {
+    "name": "expired unused authorization independently confirms absence",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": null,
+        "receipt": null
+      },
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-b",
+        "observedAt": "2026-08-03T12:00:01.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": null,
+        "receipt": null
+      }
+    ],
+    "authorizationStateObservations": [
+      {
+        "networkId": "eip155:8453",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "source": "base-rpc-a",
+        "authorizer": "0x1111111111111111111111111111111111111111",
+        "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "used": false,
+        "observedBlockNumber": "1011",
+        "observedBlockHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "observedBlockTimestamp": "1700000200",
+        "observedHeadBlockNumber": "1022"
+      },
+      {
+        "networkId": "eip155:8453",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "source": "base-rpc-b",
+        "authorizer": "0x1111111111111111111111111111111111111111",
+        "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "used": false,
+        "observedBlockNumber": "1011",
+        "observedBlockHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "observedBlockTimestamp": "1700000200",
+        "observedHeadBlockNumber": "1022"
+      }
+    ],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "absent",
+      "authoritative": true,
+      "settlementCount": 0,
+      "confirmations": 12,
+      "reason": "AUTHORIZATION_EXPIRED_UNUSED_INDEPENDENTLY_CONFIRMED"
+    }
+  },
+  {
+    "name": "used authorization without receipt remains unknown",
+    "authorization": {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "from": "0x1111111111111111111111111111111111111111",
+      "to": "0x2222222222222222222222222222222222222222",
+      "valueAtomic": "10000",
+      "validAfter": "1700000000",
+      "validBefore": "1700000100",
+      "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "receiptObservations": [
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-a",
+        "observedAt": "2026-08-03T12:00:00.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": null,
+        "receipt": null
+      },
+      {
+        "networkId": "eip155:8453",
+        "source": "base-rpc-b",
+        "observedAt": "2026-08-03T12:00:01.000Z",
+        "observedHeadBlockNumber": "1011",
+        "canonicalBlockHash": null,
+        "receipt": null
+      }
+    ],
+    "authorizationStateObservations": [
+      {
+        "networkId": "eip155:8453",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "source": "base-rpc-a",
+        "authorizer": "0x1111111111111111111111111111111111111111",
+        "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "used": true,
+        "observedBlockNumber": "1011",
+        "observedBlockHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "observedBlockTimestamp": "1700000200",
+        "observedHeadBlockNumber": "1022"
+      },
+      {
+        "networkId": "eip155:8453",
+        "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "source": "base-rpc-b",
+        "authorizer": "0x1111111111111111111111111111111111111111",
+        "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "used": true,
+        "observedBlockNumber": "1011",
+        "observedBlockHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "observedBlockTimestamp": "1700000200",
+        "observedHeadBlockNumber": "1022"
+      }
+    ],
+    "minimumConfirmations": 12,
+    "expected": {
+      "status": "unknown",
+      "authoritative": false,
+      "settlementCount": 0,
+      "confirmations": 0,
+      "reason": "AUTHORIZATION_USED_WITHOUT_RECEIPT"
+    }
+  }
+]

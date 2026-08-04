@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "0.1",
+  "operationId": "sha256:9535c84949d5f229584fa75ca1d78678863e121bd518f4d923ad3f67f5ad972d",
+  "authorizationId": "sha256:29e3a341bfd346b56ec90fbb27510108801cceb41c1445b415d930c824eb588d",
+  "inputHash": "sha256:3cdc7731e576d1c7411dd3a322e605ec5321bd6d7aad400d8f868771fb34500d",
+  "assurance": {
+    "scope": "trusted_prevalidated_observations",
+    "sourceAuthentication": "not_performed",
+    "externalAuthorityProven": false,
+    "paymentExecutionEnabled": false
+  },
+  "settlement": {
+    "status": "confirmed",
+    "authoritative": true,
+    "settlementCount": 1,
+    "confirmations": 12,
+    "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "blockNumber": "1000",
+    "reasons": [
+      "SETTLEMENT_CONFIRMED"
+    ]
+  },
+  "effect": {
+    "status": "committed",
+    "authoritative": true,
+    "effectCount": 1,
+    "effectIds": [
+      "order-0001"
+    ],
+    "reasons": []
+  },
+  "terminalState": "settled_delivered",
+  "retry": {
+    "sameAuthorizationReplaySafe": false,
+    "newAuthorizationSafe": false,
+    "reasons": [
+      "IDENTICAL_REPLAY_NOT_PROVEN_NON_CHARGING",
+      "NEW_AUTHORIZATION_ABSENCE_PROOF_INCOMPLETE"
+    ]
+  },
+  "invariant": {
+    "settlementCount": 1,
+    "effectCount": 1,
+    "maximumSettlements": 1,
+    "maximumEffects": 1,
+    "passed": true
+  },
+  "generatedAt": "2026-08-03T18:15:00.000Z",
+  "bundleHash": "sha256:681142799f09c8e3ada5ff940036ac47e77e350f993e8e36db27e8a263782b7b"
+}

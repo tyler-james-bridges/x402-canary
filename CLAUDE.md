@@ -47,18 +47,24 @@ git diff --check
 - `src/contracts.ts` and `src/load-contract.ts`: exact-only Base contract schema and validation
 - `src/x402-challenge.ts`: deterministic no-spend challenge predicates
 - `src/reconciliation-policy.ts`: conservative fact-to-verdict retry policy
+- `src/evidence/`: canonical IDs, durable journal, Base/effect evaluators, and deterministic bundle kernel
+- `src/evidence-cli.ts`: file-only evidence recomputation; no RPC, wallet, signer, URL fetch, or payment path
+- `examples/evidence-kernel-v0.1.*.json`: sanitized input and exact expected bundle
 - `src/verify.ts`: CLI with the paid-execution kill switch
 - `src/__tests__/public-containment.test.ts`: executable containment assertions
 - `README.md`: user-facing status and remaining gates
 
 ## Remaining gates before paid execution
 
-Do not enable paid execution until the implementation includes and tests, at minimum:
+The local v0.1 kernel now implements canonical request/authorization IDs, an append-only hash-linked journal, strict injected Base native-USDC receipt/authorization-state evaluation, effect reconciliation, deterministic bundles, and concurrency/restart fixtures. This does not make the paid path production-ready.
 
-1. A durable attempt journal and canonical authorization identity.
-2. Independent Base transaction-receipt and native-USDC `Transfer` verification.
-3. Authoritative settlement-absence and effect-absence reconciliation.
-4. Method, URL, headers, and body semantics bound into the authorization policy.
-5. Concurrency and crash-recovery tests proving at most one settlement and one effect.
+Do not enable paid execution until, at minimum:
 
-The reconciliation fixtures currently exercise policy logic only; they are not proof that these evidence-producing components exist.
+1. Independently configured Base RPC adapters collect and cross-check the receipt, canonical-head, finality, and `authorizationState` observations consumed by the pure evaluator.
+2. An operator-owned system-of-record adapter defines and produces authoritative effect evidence.
+3. The verified journal head is bound into persisted terminal bundles, with a documented cross-process single-writer model.
+4. Settlement submitter/router classification and independent delivery evidence are implemented where applicable.
+5. Base fork/RPC conformance and native-USDC upgrade/event-order coverage pass.
+6. The integrated adapters receive an external security review.
+
+Never promote a caller-supplied source label or `authoritative: true` flag into trusted evidence without the corresponding configured adapter.

@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "day-001",
+  "series": "aifi-evidence-kernel",
+  "number": 1,
+  "arc": "base",
+  "status": "closed",
+  "startedAt": "2026-08-04T00:57:28.937Z",
+  "sourceIssue": null,
+  "repository": {
+    "root": "/Users/tjb/code/x402-canary",
+    "branch": "feat/paid-path-contracts",
+    "head": "38e43263f0ac20321dedc22500af8b63a9001de1",
+    "startingStatus": []
+  },
+  "question": "Can v0.1 independently derive deterministic Base-USDC settlement and retry verdicts from durable canonical evidence without enabling a payment path?",
+  "startingState": "Commit 38e4326 is shipped in containment/no-spend mode; policy-only reconciliation fixtures exist, but there is no durable attempt journal, canonical authorization identity, independent Base receipt verifier, or authoritative effect evidence.",
+  "boundedChange": "Add an append-only attempt journal, canonical request/authorization/effect identities, an independent Base receipt and native-USDC Transfer verifier over injected RPC evidence, effect reconciliation, a machine-readable evidence bundle/CLI, and deterministic crash/concurrency fixtures. No wallet, signing, payment, live RPC, outreach, or deployment.",
+  "successCondition": "All existing and new tests pass; a valid fixture proves exactly one matching Base USDC settlement and effect; mismatches, duplicates, reorg/confirmation gaps, and unknown evidence fail closed; restart preserves the journal; concurrent writes preserve invariants; the CLI emits a stable sanitized evidence bundle; every default executable payment path remains disabled.",
+  "failureCondition": "Any malformed or mismatched receipt is accepted; any unknown outcome is marked retry-safe; duplicate settlement/effect is tolerated; journal data is lost or corrupted across restart/concurrency; the implementation requires a wallet/secret/live RPC/payment; or containment/no-spend regressions appear.",
+  "requiredReceipts": [
+    "Passing npm test, typecheck, clean build, and git diff checks",
+    "Deterministic Base evidence fixture and sanitized example evidence bundle",
+    "Independent QA report covering journal, settlement, effect, retry, and no-spend invariants"
+  ],
+  "testCommands": [
+    "npm test",
+    "npm run typecheck",
+    "npm run build",
+    "git diff --check"
+  ],
+  "events": [
+    {
+      "type": "decision",
+      "note": "Evidence Kernel v0.1 is a pure evaluator over injected sanitized observations; the CLI has no RPC, wallet, signer, or payment transport.",
+      "value": "",
+      "at": "2026-08-04T00:59:59.715Z"
+    },
+    {
+      "type": "decision",
+      "note": "Operation and authorization IDs use namespace-prefixed SHA-256 canonical identities; the authorization ID binds EIP-3009 fields but is not represented as the EIP-712 digest.",
+      "value": "",
+      "at": "2026-08-04T00:59:59.848Z"
+    },
+    {
+      "type": "decision",
+      "note": "Settlement presence requires a canonical Base receipt and exactly one matching native-USDC Transfer log; authoritative absence requires an expired unused native-USDC authorizationState observation.",
+      "value": "",
+      "at": "2026-08-04T00:59:59.978Z"
+    },
+    {
+      "type": "decision",
+      "note": "The evidence bundle binds its full input with inputHash and fails closed on unknown, duplicate, mismatch, reorg, non-final, or non-authoritative evidence.",
+      "value": "",
+      "at": "2026-08-04T01:00:00.127Z"
+    },
+    {
+      "type": "decision",
+      "note": "Implementation moved to local branch feat/base-evidence-kernel; shipped commit 38e4326 remains the immutable baseline and no push/deploy is authorized in this session.",
+      "value": "",
+      "at": "2026-08-04T01:02:42.457Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Effect evidence evaluator passes 19 deterministic authoritative/absence/duplicate/contradiction tests",
+      "value": "src/__tests__/effect-evidence.test.ts",
+      "at": "2026-08-04T01:05:23.476Z"
+    },
+    {
+      "type": "decision",
+      "note": "Superseding the early receipt-only rule: settlement presence now requires the native-USDC AuthorizationUsed(authorizer, nonce) event immediately followed by the exact Transfer(from, to, value), plus canonical block/finality checks.",
+      "value": "src/evidence/base-settlement.ts",
+      "at": "2026-08-04T01:25:15.974Z"
+    },
+    {
+      "type": "decision",
+      "note": "Authoritative settlement absence requires two distinct trusted adapters agreeing on the same finalized post-expiry authorizationState snapshot; caller-selected source labels alone are not external proof.",
+      "value": "docs/evidence-kernel-v0.1.md",
+      "at": "2026-08-04T01:25:16.101Z"
+    },
+    {
+      "type": "decision",
+      "note": "Evidence Kernel v0.1 is scoped to deterministic evaluation of trusted, pre-validated adapter facts. RPC/source authentication and operator-system adapters remain unproven, so this session cannot authorize paid execution.",
+      "value": "README.md",
+      "at": "2026-08-04T01:25:16.238Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Full integrated gate passed: 177 tests, TypeScript typecheck, clean build, and diff check.",
+      "value": "npm test && npm run typecheck && npm run build && git diff --check",
+      "at": "2026-08-04T01:25:16.375Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Sanitized input recomputes a byte-stable Base settlement/effect bundle through the file-only CLI.",
+      "value": "examples/evidence-kernel-v0.1.bundle.json",
+      "at": "2026-08-04T01:25:16.502Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Independent adversarial review passes the scoped trusted-input evaluator after nonce pairing, finality, fork, cross-batch, chronology, and count fixes.",
+      "value": "src/__tests__/base-settlement.test.ts",
+      "at": "2026-08-04T01:25:16.632Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Frozen final gate passed: 179 tests, typecheck, clean build, and diff check after all adversarial fixes.",
+      "value": "npm test && npm run typecheck && npm run build && git diff --check",
+      "at": "2026-08-04T01:32:25.142Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Fresh frozen-snapshot QA PASS: no bounded ship blockers; 179/179 and all containment/static gates pass.",
+      "value": "independent final_qa report",
+      "at": "2026-08-04T01:34:10.364Z"
+    }
+  ],
+  "endedAt": "2026-08-04T01:34:31.860Z",
+  "close": {
+    "outcome": "partial",
+    "shipped": [
+      "Domain-separated operation/authorization identities and a restart-safe append-only hash-linked evidence journal.",
+      "Fail-closed Base native-USDC AuthorizationUsed-to-Transfer settlement evaluation, finalized absence reconciliation, effect reconciliation, retry integrity gating, and deterministic bundle hashes.",
+      "A file-only no-network CLI, sanitized input/output example pair, 179 deterministic tests, and explicit trust-boundary documentation."
+    ],
+    "verified": [
+      "179/179 tests, TypeScript typecheck, clean build, git diff check, CLI byte parity, containment checks, and static no-network/no-wallet scans pass.",
+      "Two independent adversarial reviews pass the scoped claim: deterministic evaluation over trusted pre-validated observations.",
+      "No wallet, signer, payment, live RPC, deployment, outreach, or production mutation was introduced."
+    ],
+    "unproven": [
+      "RPC source authentication, canonical-head ancestry, and operator system-of-record authority still require configured adapters or attestations.",
+      "Bundles are not yet bound to a verified journal head, and journal writer serialization is process-local.",
+      "Base fork/RPC conformance, upgrade-aware native-USDC validation, integrated external review, and deployment verification remain outstanding."
+    ],
+    "next": [
+      "Build the authenticated read-only Base evidence collector and source registry.",
+      "Define the operator effect contract/adapter and bind its query key and finalization horizon to the operation policy.",
+      "Persist bundles against the verified journal head, then run Base conformance and design-partner shadow evaluations before considering any payment path."
+    ],
+    "tests": [
+      {
+        "command": "npm test",
+        "passed": true,
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "passed": true,
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "passed": true,
+        "exitCode": 0
+      },
+      {
+        "command": "git diff --check",
+        "passed": true,
+        "exitCode": 0
+      }
+    ],
+    "git": {
+      "isRepository": true,
+      "root": "/Users/tjb/code/x402-canary",
+      "branch": "feat/base-evidence-kernel",
+      "head": "38e43263f0ac20321dedc22500af8b63a9001de1",
+      "status": [
+        "M CLAUDE.md",
+        " M README.md",
+        " M package.json",
+        "?? .builder-workflows/",
+        "?? docs/",
+        "?? examples/",
+        "?? src/__tests__/base-settlement.test.ts",
+        "?? src/__tests__/effect-evidence.test.ts",
+        "?? src/__tests__/evidence-canonical.test.ts",
+        "?? src/__tests__/evidence-cli.test.ts",
+        "?? src/__tests__/evidence-journal.test.ts",
+        "?? src/__tests__/evidence-kernel.test.ts",
+        "?? src/__tests__/fixtures/base-settlement-v0.1.json",
+        "?? src/__tests__/fixtures/effect-evidence-v0.1.json",
+        "?? src/evidence-cli.ts",
+        "?? src/evidence/"
+      ],
+      "commits": [],
+      "diffStat": "CLAUDE.md    | 20 +++++++++++++-------\n README.md    | 40 ++++++++++++++++++++++++++++++----------\n package.json |  1 +\n 3 files changed, 44 insertions(+), 17 deletions(-)"
+    }
+  }
+}
