@@ -42,6 +42,8 @@ git diff --check
 ## Important files
 
 - `src/index.ts` and `src/dashboard.ts`: contained loopback-only startup path
+- `src/public-evidence-status.ts` and `api/evidence-status.ts`: immutable, sanitized release status; never import journals, artifacts, collectors, action modules, or environment data beyond the two allowlisted Vercel fields
+- `public/index.html`, `public/styles.css`, and `public/app.js`: read-only production console; same-origin status requests only, no forms, target URLs, payment prompts, or unsafe HTML sinks
 - `src/canary.ts`: disabled legacy probe entry point
 - `src/endpoints.ts`: intentionally empty target registry
 - `src/contracts.ts` and `src/load-contract.ts`: exact-only Base contract schema and validation
@@ -76,6 +78,10 @@ Do not enable paid execution until, at minimum:
 6. The integrated adapters receive an external security review.
 
 Never promote a caller-supplied source label or `authoritative: true` flag into trusted evidence without the corresponding configured adapter.
+
+The public evidence console is not an operator-result viewer. Private journals, artifacts, operation data, effect identifiers, retry verdicts, registry material, and signatures stay off the public network. Its only dynamic inputs are the fixed `/api/health` and `/api/evidence-status` responses. Keep every execution-capability flag false and keep the legacy trust/preflight functions at HTTP 410.
+
+Treat Vercel and Bankr as independent deployment surfaces. Verification of `canary.0x402.sh` does not establish the state of a separately hosted Bankr listing, and the local empty Bankr manifest must not be used as proof of remote removal.
 
 Evidence Kernel v0.1 intentionally remains a legacy prevalidated-input schema with `externalAuthorityProven: false`. Do not widen it. Journal-bound v0.2 accepts runtime-branded Base/effect results, derives the legacy input, and binds it to controlled journal timestamps, but it remains shadow-only and grants no execution authority.
 

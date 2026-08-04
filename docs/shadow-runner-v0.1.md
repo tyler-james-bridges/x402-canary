@@ -196,6 +196,8 @@ The public result includes IDs and content hashes, the settlement/effect/invaria
 
 It omits the operation URL/body, raw idempotency key, endpoint environment values, RPC origins, transaction/block details, effect query and IDs, public keys, signatures, filesystem paths, and both retry verdict booleans. The public converter accepts only the exact process-branded result produced after closure verification and recovery audit; fabricated objects and serialized clones are rejected.
 
+This sanitized operator result is still private by default and is not served by the production web console. The console exposes only a fixed, allowlisted release summary: verified core commit, deterministic-suite receipt, evidence-layer names, the conformance matrix, deployment identity, explicit false execution capabilities, and trust limitations. It never reads the journal or artifact store and cannot accept an operation, target URL, authorization, or action request.
+
 ## Deterministic conformance matrix
 
 The injected end-to-end suite exercises real collector and Ed25519 verification code without network access:
@@ -226,7 +228,7 @@ This runner raises composition assurance but does not turn local evidence into p
 - Offline replay does not repeat historical transport or signature authentication.
 - The journal depends on a trusted local writer and cooperating lock discipline.
 - A local hash chain cannot prevent complete rollback of the journal, artifacts, and all retained receipts. An external signed/WORM checkpoint is still required.
-- No delivery authority, settlement submitter/router classification, public service, scheduler, deployment, wallet, signer, transaction submission, payment, or retry executor is included.
+- No delivery authority, settlement submitter/router classification, public runner service, scheduler, wallet, signer, transaction submission, payment, or retry executor is included. The separate read-only release-status console is metadata only.
 
 Payment execution remains disabled until those separate production gates are satisfied and explicitly authorized.
 

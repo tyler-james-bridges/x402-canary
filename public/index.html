@@ -1,215 +1,398 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Source-containment status for the x402 Canary acceptance-verification prototype.">
-  <title>x402 Canary · contained</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --bg: #ece8e0;
-      --card: #f6f2ea;
-      --ink: #171614;
-      --muted: #68645c;
-      --rule: #cec7b7;
-      --accent: #7768cf;
-      --warn: #a84d32;
-      --ok: #317048;
-    }
-
-    :root.dark {
-      color-scheme: dark;
-      --bg: #1a1d24;
-      --card: #23272f;
-      --ink: #f0ece2;
-      --muted: #aaa496;
-      --rule: #3d424e;
-      --accent: #b9abf0;
-      --warn: #e08368;
-      --ok: #78c690;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-      font: 15px/1.6 Inter, ui-sans-serif, system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    code, .mono {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-    }
-
-    a { color: inherit; text-underline-offset: 3px; }
-
-    .bar {
-      border-bottom: 1px solid var(--rule);
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 12px 24px;
-      font: 12px/1.4 "SFMono-Regular", Consolas, monospace;
-    }
-
-    .state { color: var(--warn); font-weight: 700; }
-
-    .theme {
-      border: 1px solid var(--rule);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--ink);
-      cursor: pointer;
-      padding: 2px 8px;
-    }
-
-    main { max-width: 960px; margin: 0 auto; padding: 72px 24px; }
-
-    h1 {
-      font-size: clamp(42px, 8vw, 76px);
-      letter-spacing: -.055em;
-      line-height: .95;
-      margin: 0 0 28px;
-    }
-
-    h1 em { color: var(--accent); font-style: normal; }
-
-    .lead { color: var(--muted); font-size: 18px; max-width: 700px; }
-
-    .notice {
-      background: var(--card);
-      border: 1px solid var(--rule);
-      border-left: 4px solid var(--warn);
-      border-radius: 10px;
-      margin: 42px 0;
-      padding: 22px 24px;
-    }
-
-    .notice h2, section h2 { font-size: 20px; margin: 0 0 10px; }
-    .notice p { margin: 0; color: var(--muted); }
-
-    section { border-top: 1px solid var(--rule); padding: 34px 0; }
-
-    .predicates {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      list-style: none;
-      margin: 18px 0 0;
-      padding: 0;
-    }
-
-    .predicates li {
-      background: var(--card);
-      border: 1px solid var(--rule);
-      border-radius: 8px;
-      color: var(--muted);
-      padding: 14px 16px;
-    }
-
-    .predicates code { color: var(--ink); display: block; font-weight: 700; }
-
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border-bottom: 1px solid var(--rule); padding: 13px 10px; text-align: left; vertical-align: top; }
-    th { color: var(--muted); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
-    td:first-child { white-space: nowrap; }
-    .disabled { color: var(--warn); font-weight: 700; }
-    .local { color: var(--ok); font-weight: 700; }
-
-    footer { color: var(--muted); font-size: 13px; padding-top: 28px; }
-
-    @media (max-width: 650px) {
-      main { padding-top: 48px; }
-      table, tbody, tr, td { display: block; }
-      thead { display: none; }
-      tr { border-bottom: 1px solid var(--rule); padding: 10px 0; }
-      td { border: 0; padding: 3px 0; white-space: normal; }
-    }
-  </style>
+  <meta name="description" content="Public, no-action verification console for the x402 Canary local-integrity evidence release on Base.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="x402 Canary · Shadow / No Action Evidence Console">
+  <meta property="og:description" content="Verify the bounded local-integrity evidence release on Base—without wallets, signing, payment execution, or action authority.">
+  <meta property="og:url" content="https://canary.0x402.sh/">
+  <meta property="og:image" content="https://canary.0x402.sh/og.png">
+  <meta property="og:image:width" content="1729">
+  <meta property="og:image:height" content="910">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="x402 Canary · Shadow / No Action Evidence Console">
+  <meta name="twitter:description" content="Verify the bounded local-integrity evidence release on Base—without wallets, signing, payment execution, or action authority.">
+  <meta name="twitter:image" content="https://canary.0x402.sh/og.png">
+  <title>x402 Canary · Shadow Evidence Console</title>
+  <link rel="canonical" href="https://canary.0x402.sh/">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
 </head>
 <body>
-  <div class="bar">
-    <span>x402 Canary · <span class="state">public outbound probes paused</span></span>
-    <button class="theme" id="theme" type="button" aria-label="Toggle color theme">theme</button>
-  </div>
+  <a class="skip-link" href="#main-content">Skip to evidence</a>
 
-  <main>
-    <h1>canary <em>/</em> x402</h1>
-    <p class="lead">
-      A contract-defined acceptance-verification prototype for Base settlement.
-      The public deployment is in containment mode while deterministic fixtures,
-      authorization checks, and duplicate-effect protections are completed.
-    </p>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="x402 Canary home">
+      <span class="brand-mark" aria-hidden="true"><span></span></span>
+      <span class="brand-copy">
+        <strong>x402 / canary</strong>
+        <small>evidence console</small>
+      </span>
+    </a>
 
-    <div class="notice" role="status">
-      <h2>No public target requests</h2>
-      <p>
-        Caller-selected outbound checks and third-party status fan-out are disabled.
-        Requests to the legacy check routes receive HTTP 410 and do not contact the
-        submitted target.
-      </p>
+    <nav class="site-nav" aria-label="Evidence console">
+      <a href="#system">System</a>
+      <a href="#matrix">Outcomes</a>
+      <a href="#limits">Limits</a>
+    </nav>
+
+    <div class="header-tools">
+      <div class="live-chip" id="live-chip" data-state="checking" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="live-chip-label">checking live status</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button">
+        <span class="theme-icon" aria-hidden="true"></span>
+        <span id="theme-label">Dark theme</span>
+      </button>
     </div>
+  </header>
 
-    <section>
-      <h2>Objective acceptance predicates</h2>
-      <p>Each result is intended to report testable observations, not a payment decision.</p>
-      <ul class="predicates">
-        <li><code>returns_402</code>Initial request returns HTTP 402.</li>
-        <li><code>challenge_valid</code>The challenge matches the pinned contract.</li>
-        <li><code>browser_readable</code>Required response headers are exposed.</li>
-        <li><code>preflight_valid</code>CORS preflight behavior matches the contract.</li>
-        <li><code>contract_compatible</code>Network, scheme, asset, recipient, and amount agree.</li>
-      </ul>
+  <main id="main-content">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <p class="eyebrow">Base mainnet · native USDC · evidence only</p>
+        <h1 id="hero-title"><span>Shadow</span><span class="slash">/</span><span>No action</span></h1>
+        <p class="hero-lead">
+          A public verification surface for independently recomputable settlement,
+          effect, and journal integrity. It reports what the local evidence graph proves—and
+          keeps everything outside that boundary visibly unproven.
+        </p>
+
+        <div class="release-strip" aria-label="Release details">
+          <div>
+            <span class="strip-label">Release</span>
+            <strong>local-integrity evidence</strong>
+          </div>
+          <div>
+            <span class="strip-label">Core commit</span>
+            <code>3ead868</code>
+          </div>
+          <div>
+            <span class="strip-label">Mode</span>
+            <strong>shadow_no_action</strong>
+          </div>
+          <div>
+            <span class="strip-label">Directive</span>
+            <strong>none</strong>
+          </div>
+        </div>
+      </div>
+
+      <aside class="containment-card" aria-labelledby="containment-title">
+        <div class="card-kicker">Execution boundary</div>
+        <h2 id="containment-title">Observation without authority to act.</h2>
+        <ul class="control-list">
+          <li><span aria-hidden="true">×</span> Wallet</li>
+          <li><span aria-hidden="true">×</span> Signing</li>
+          <li><span aria-hidden="true">×</span> Transaction submission</li>
+          <li><span aria-hidden="true">×</span> Payment execution</li>
+          <li><span aria-hidden="true">×</span> Action execution</li>
+        </ul>
+        <p>
+          This page accepts no endpoint, operation, authorization, or private evidence.
+          It exposes no execution control.
+        </p>
+      </aside>
     </section>
 
-    <section>
-      <h2>Public route status</h2>
-      <table>
-        <thead>
-          <tr><th>Route</th><th>Status</th><th>Behavior</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="mono">GET /api/health</td>
-            <td class="local">local only</td>
-            <td>Reports containment configuration without contacting third parties.</td>
-          </tr>
-          <tr>
-            <td class="mono">GET /api/trust</td>
-            <td class="disabled">HTTP 410</td>
-            <td>Legacy route; caller-selected outbound requests are disabled.</td>
-          </tr>
-          <tr>
-            <td class="mono">POST /api/preflight</td>
-            <td class="disabled">HTTP 410</td>
-            <td>Legacy route; caller-selected outbound requests are disabled.</td>
-          </tr>
-          <tr>
-            <td>Bankr paid service</td>
-            <td class="disabled">unlisted in source</td>
-            <td>The source manifest advertises no paid services.</td>
-          </tr>
-        </tbody>
-      </table>
+    <section class="live-section section-shell" aria-labelledby="live-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">00 / live surface</p>
+          <h2 id="live-title">Same-origin status</h2>
+        </div>
+        <p class="section-intro">
+          Read-only status from this deployment. Missing, malformed, or contradictory
+          responses are shown as unverified.
+        </p>
+      </div>
+
+      <div class="status-grid" aria-live="polite" aria-atomic="false">
+        <article class="status-card" id="health-card" data-state="checking">
+          <div class="status-card-head">
+            <span class="status-source">/api/health</span>
+            <span class="state-label" id="health-connection">checking</span>
+          </div>
+          <dl>
+            <div><dt>Containment</dt><dd id="health-status">not yet verified</dd></div>
+            <div><dt>Service</dt><dd id="health-service">—</dd></div>
+            <div><dt>Outbound requests</dt><dd id="health-outbound">—</dd></div>
+          </dl>
+        </article>
+
+        <article class="status-card" id="evidence-card" data-state="checking">
+          <div class="status-card-head">
+            <span class="status-source">/api/evidence-status</span>
+            <span class="state-label" id="evidence-connection">checking</span>
+          </div>
+          <dl>
+            <div><dt>Release</dt><dd id="evidence-status">not yet verified</dd></div>
+            <div><dt>Core</dt><dd><code id="evidence-core">3ead8680d764ecbafe0739865f3789f8928f0fa6</code></dd></div>
+            <div><dt>Core suite</dt><dd id="evidence-tests">—</dd></div>
+          </dl>
+        </article>
+
+        <article class="status-card" id="deployment-card" data-state="checking">
+          <div class="status-card-head">
+            <span class="status-source">deployment</span>
+            <span class="state-label" id="deployment-connection">checking</span>
+          </div>
+          <dl>
+            <div><dt>Environment</dt><dd id="deployment-environment">—</dd></div>
+            <div><dt>Served commit</dt><dd><code id="deployment-commit">—</code></dd></div>
+            <div><dt>Status checked</dt><dd id="status-checked">pending</dd></div>
+          </dl>
+        </article>
+      </div>
+      <p class="status-note" id="status-note">Contacting the two same-origin status routes.</p>
     </section>
 
-    <footer>
-      Machine-readable route notes are available in <a href="/llms.txt">llms.txt</a>.
-      Source: <a href="https://github.com/tyler-james-bridges/x402-canary">GitHub</a>.
-    </footer>
+    <section class="section-shell" id="system" aria-labelledby="system-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">01 / evidence system</p>
+          <h2 id="system-title">Four bounded layers</h2>
+        </div>
+        <p class="section-intro">
+          Each layer narrows a different uncertainty. Composition raises local integrity;
+          it does not turn local evidence into external truth.
+        </p>
+      </div>
+
+      <ol class="layer-stack">
+        <li class="layer-card" data-component-id="base-collector">
+          <div class="layer-number">01</div>
+          <div class="layer-main">
+            <div class="layer-title-row">
+              <h3>Base Collector <span>v0.1</span></h3>
+              <span class="layer-state" data-field="state">implemented</span>
+            </div>
+            <p data-field="boundary">
+              Registry-pinned, read-only Base RPC collection with canonical shared-anchor
+              and native-USDC authorization-state checks.
+            </p>
+          </div>
+          <div class="layer-output"><span>Emits</span> branded Base observations</div>
+        </li>
+
+        <li class="layer-card" data-component-id="effect-authority">
+          <div class="layer-number">02</div>
+          <div class="layer-main">
+            <div class="layer-title-row">
+              <h3>Effect Authority <span>v0.1</span></h3>
+              <span class="layer-state" data-field="state">implemented</span>
+            </div>
+            <p data-field="boundary">
+              Ed25519 verification against an out-of-band registry, locally derived query
+              coordinates, key lifecycle, and a signed effect outcome.
+            </p>
+          </div>
+          <div class="layer-output"><span>Emits</span> verified effect attestations</div>
+        </li>
+
+        <li class="layer-card" data-component-id="journal-bundle">
+          <div class="layer-number">03</div>
+          <div class="layer-main">
+            <div class="layer-title-row">
+              <h3>Journal Bundle <span>v0.2</span></h3>
+              <span class="layer-state" data-field="state">implemented</span>
+            </div>
+            <p data-field="boundary">
+              Content-addressed artifacts and two adjacent hash-linked commits bind the
+              exact evaluator input, result, and closure receipt.
+            </p>
+          </div>
+          <div class="layer-output"><span>Emits</span> replayable integrity closure</div>
+        </li>
+
+        <li class="layer-card" data-component-id="shadow-runner">
+          <div class="layer-number">04</div>
+          <div class="layer-main">
+            <div class="layer-title-row">
+              <h3>Shadow Runner <span>v0.1</span></h3>
+              <span class="layer-state" data-field="state">implemented</span>
+            </div>
+            <p data-field="boundary">
+              Composes pinned collection, attestation, journal, artifact, and exact-replay
+              boundaries into a sanitized no-action result.
+            </p>
+          </div>
+          <div class="layer-output"><span>Emits</span> actionDirective: none</div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section-shell" id="matrix" aria-labelledby="matrix-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">02 / conformance</p>
+          <h2 id="matrix-title">Nine deterministic outcomes</h2>
+        </div>
+        <p class="section-intro" id="matrix-note">
+          The checked-in conformance matrix separates Base settlement, business effect,
+          terminal state, and the at-most-one invariant.
+        </p>
+      </div>
+
+      <div class="table-shell" tabindex="0" role="region" aria-label="Deterministic outcome matrix">
+        <table>
+          <caption>Shadow Runner v0.1 conformance matrix</caption>
+          <thead>
+            <tr>
+              <th scope="col">Case</th>
+              <th scope="col">Base evidence</th>
+              <th scope="col">Effect evidence</th>
+              <th scope="col">Terminal state</th>
+              <th scope="col">Invariant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="outcome-row-0">
+              <th scope="row" data-field="case">01 · confirmed_committed</th>
+              <td data-field="base"><span class="evidence-token positive">confirmed</span></td>
+              <td data-field="effect">committed</td>
+              <td data-field="terminalState"><code>settled_delivered</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+            <tr id="outcome-row-1">
+              <th scope="row" data-field="case">02 · absent_absent</th>
+              <td data-field="base">absent</td>
+              <td data-field="effect">absent</td>
+              <td data-field="terminalState"><code>settlement_failed</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+            <tr id="outcome-row-2">
+              <th scope="row" data-field="case">03 · pending_confirmations</th>
+              <td data-field="base">pending_finality</td>
+              <td data-field="effect">committed</td>
+              <td data-field="terminalState"><code>settled_pending_finality</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+            <tr id="outcome-row-3">
+              <th scope="row" data-field="case">04 · base_contradiction</th>
+              <td data-field="base"><span class="evidence-token alert">contradiction</span></td>
+              <td data-field="effect">committed</td>
+              <td data-field="terminalState"><code>evidence_contradiction</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+            <tr id="outcome-row-4">
+              <th scope="row" data-field="case">05 · duplicate_settlement</th>
+              <td data-field="base"><span class="evidence-token alert">duplicate</span></td>
+              <td data-field="effect">committed</td>
+              <td data-field="terminalState"><code>duplicate_settlement</code></td>
+              <td data-field="invariant"><span class="invariant block">fail</span></td>
+            </tr>
+            <tr id="outcome-row-5">
+              <th scope="row" data-field="case">06 · confirmed_effect_absent</th>
+              <td data-field="base">confirmed</td>
+              <td data-field="effect">absent</td>
+              <td data-field="terminalState"><code>settled_delivery_failed</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+            <tr id="outcome-row-6">
+              <th scope="row" data-field="case">07 · confirmed_effect_unknown</th>
+              <td data-field="base">confirmed</td>
+              <td data-field="effect">unknown</td>
+              <td data-field="terminalState"><code>settled_delivery_unverified</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+            <tr id="outcome-row-7">
+              <th scope="row" data-field="case">08 · confirmed_effect_duplicate</th>
+              <td data-field="base">confirmed</td>
+              <td data-field="effect"><span class="evidence-token alert">duplicate</span></td>
+              <td data-field="terminalState"><code>settled_delivery_failed</code></td>
+              <td data-field="invariant"><span class="invariant block">fail</span></td>
+            </tr>
+            <tr id="outcome-row-8">
+              <th scope="row" data-field="case">09 · confirmed_effect_contradiction</th>
+              <td data-field="base">confirmed</td>
+              <td data-field="effect"><span class="evidence-token alert">contradiction</span></td>
+              <td data-field="terminalState"><code>evidence_contradiction</code></td>
+              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="matrix-footnote">
+        These rows are evidence classifications, not instructions. The public result
+        intentionally omits internal replay verdicts and always carries <code>actionDirective: none</code>.
+      </p>
+    </section>
+
+    <section class="section-shell limits-section" id="limits" aria-labelledby="limits-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">03 / assurance boundary</p>
+          <h2 id="limits-title">What remains unproven</h2>
+        </div>
+        <p class="section-intro">
+          Local integrity is meaningful only when its limits stay attached to every result.
+        </p>
+      </div>
+
+      <div class="limits-grid">
+        <article class="limit-card critical">
+          <span class="limit-value" id="external-truth-value">false</span>
+          <h3>External truth proven</h3>
+          <p>
+            HTTPS authenticates configured endpoints, not Base consensus truth. Signed
+            effect claims do not independently prove the operator database was truthful.
+          </p>
+        </article>
+        <article class="limit-card critical">
+          <span class="limit-value" id="anti-rollback-value">false</span>
+          <h3>External anti-rollback checkpoint</h3>
+          <p>
+            A local hash chain detects changes relative to retained state. Full replacement
+            of the journal, artifacts, and receipts still requires an external WORM or signed anchor.
+          </p>
+        </article>
+        <article class="limit-card">
+          <span class="limit-value" id="database-truth-value">false</span>
+          <h3>Operator database truth proven</h3>
+          <p>
+            Ed25519 proves who signed a policy-matching statement. It does not prove how
+            the signing adapter queried its primary system of record.
+          </p>
+        </article>
+        <article class="limit-card">
+          <span class="limit-value" id="writer-trust-value">required</span>
+          <h3>Trusted local writer</h3>
+          <p>
+            Journal integrity depends on controlled append access and cooperating lock
+            discipline. A stale crash sentinel requires manual, evidence-preserving recovery.
+          </p>
+        </article>
+      </div>
+
+      <aside class="truth-banner" role="note">
+        <strong>Precise claim</strong>
+        <p>
+          Core commit <code>3ead868</code> demonstrates deterministic local composition of
+          pinned Base observations, signed effect evidence, content-addressed artifacts,
+          and adjacent journal commits. It does not authorize an action or certify external reality.
+        </p>
+      </aside>
+    </section>
   </main>
 
-  <script>
-    const root = document.documentElement;
-    const button = document.getElementById("theme");
-    if (localStorage.getItem("canary-theme") === "dark") root.classList.add("dark");
-    button.addEventListener("click", () => {
-      root.classList.toggle("dark");
-      localStorage.setItem("canary-theme", root.classList.contains("dark") ? "dark" : "light");
-    });
-  </script>
+  <footer class="site-footer">
+    <div>
+      <strong>x402 Canary</strong>
+      <span>public evidence console · shadow only</span>
+    </div>
+    <p>
+      Machine-readable surface contract: <a href="/llms.txt">llms.txt</a>
+      <span aria-hidden="true">·</span> no private evidence is served
+    </p>
+  </footer>
 </body>
 </html>

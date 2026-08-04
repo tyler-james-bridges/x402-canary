@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
+import type { IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
 import { once } from "node:events";
 import test from "node:test";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import evidenceStatusHandler from "../../api/evidence-status.js";
 import healthHandler from "../../api/health.js";
 import preflightHandler from "../../api/preflight.js";
 import trustHandler from "../../api/trust.js";
@@ -58,7 +60,7 @@ function localRequest(
   route: string,
   method: string,
   body?: string,
-): Promise<{ status: number; body: string }> {
+): Promise<{ status: number; body: string; headers: IncomingHttpHeaders }> {
   return new Promise((resolve, reject) => {
     const request = httpRequest({
       host: "127.0.0.1",
@@ -72,7 +74,11 @@ function localRequest(
       let responseBody = "";
       response.setEncoding("utf8");
       response.on("data", (chunk: string) => { responseBody += chunk; });
-      response.on("end", () => resolve({ status: response.statusCode ?? 0, body: responseBody }));
+      response.on("end", () => resolve({
+        status: response.statusCode ?? 0,
+        body: responseBody,
+        headers: response.headers,
+      }));
     });
     request.once("error", reject);
     if (body !== undefined) request.write(body);
@@ -99,6 +105,28 @@ test("public handlers never make outbound requests", async () => {
       publicProbeRoutes: "disabled",
       outboundRequestsMade: 0,
     });
+
+    const evidenceStatus = response();
+    evidenceStatusHandler(request("GET"), evidenceStatus.res);
+    assert.equal(evidenceStatus.state.statusCode, 200);
+    assert.equal(
+      (evidenceStatus.state.body as { mode: string }).mode,
+      "shadow_no_action",
+    );
+    assert.deepEqual(
+      (evidenceStatus.state.body as { capabilities: Record<string, boolean> })
+        .capabilities,
+      {
+        paymentExecutionEnabled: false,
+        walletAccessEnabled: false,
+        signingEnabled: false,
+        transactionSubmissionEnabled: false,
+        retryExecutionEnabled: false,
+        actionExecutionEnabled: false,
+        callerSelectedTargetEnabled: false,
+        publicOutboundMonitoringEnabled: false,
+      },
+    );
 
     const trust = response();
     trustHandler(request("GET"), trust.res);
@@ -172,6 +200,46 @@ test("the local start path binds loopback and cannot revive outbound probes", as
     const health = await localRequest(address.port, "/api/health", "GET");
     assert.equal(health.status, 200);
     assert.equal(JSON.parse(health.body).outboundRequestsMade, 0);
+
+    const evidenceStatus = await localRequest(
+      address.port,
+      "/api/evidence-status",
+      "GET",
+    );
+    assert.equal(evidenceStatus.status, 200);
+    assert.equal(JSON.parse(evidenceStatus.body).mode, "shadow_no_action");
+    assert.equal(
+      JSON.parse(evidenceStatus.body).capabilities.actionExecutionEnabled,
+      false,
+    );
+    assert.equal(evidenceStatus.headers["cache-control"], "no-store");
+    assert.match(
+      String(evidenceStatus.headers["content-security-policy"] ?? ""),
+      /default-src 'none'/,
+    );
+
+    const rejectedStatusWrite = await localRequest(
+      address.port,
+      "/api/evidence-status",
+      "POST",
+      JSON.stringify({ action: "execute" }),
+    );
+    assert.equal(rejectedStatusWrite.status, 405);
+    assert.equal(
+      JSON.parse(rejectedStatusWrite.body).error.code,
+      "METHOD_NOT_ALLOWED",
+    );
+
+    for (const assetRoute of ["/", "/styles.css", "/app.js", "/llms.txt", "/og.png"]) {
+      const asset = await localRequest(address.port, assetRoute, "GET");
+      assert.equal(asset.status, 200, assetRoute);
+      assert.equal(asset.headers["cache-control"], "no-store", assetRoute);
+      assert.match(
+        String(asset.headers["content-security-policy"] ?? ""),
+        /script-src 'self'/,
+        assetRoute,
+      );
+    }
 
     await assert.rejects(
       checkEndpoint("https://example.test", "POST"),

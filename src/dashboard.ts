@@ -3,9 +3,33 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 
+import { createPublicEvidenceStatus } from "./public-evidence-status.js";
+
 const DEFAULT_PORT = 3402;
 const DASHBOARD_HOST = "127.0.0.1";
 const PUBLIC_DIR = path.join(process.cwd(), "public");
+
+const SECURITY_HEADERS = {
+  "Content-Security-Policy":
+    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'",
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+} as const;
+
+const PUBLIC_ASSETS = new Map<
+  string,
+  readonly ["index.html" | "llms.txt" | "styles.css" | "app.js" | "og.png", string]
+>([
+  ["/", ["index.html", "text/html; charset=utf-8"]],
+  ["/llms.txt", ["llms.txt", "text/plain; charset=utf-8"]],
+  ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
+  ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
+  ["/og.png", ["og.png", "image/png"]],
+]);
 
 const CONTAINMENT_STATUS = {
   service: "x402-canary",
@@ -24,26 +48,44 @@ const DISABLED_RESPONSE = {
   outboundRequestsMade: 0,
 } as const;
 
-function jsonResponse(res: http.ServerResponse, status: number, data: unknown): void {
+function jsonResponse(
+  res: http.ServerResponse,
+  status: number,
+  data: unknown,
+  head = false,
+): void {
   res.writeHead(status, {
+    ...SECURITY_HEADERS,
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
     "Cache-Control": "no-store",
   });
-  res.end(JSON.stringify(data, null, 2));
+  res.end(head ? undefined : JSON.stringify(data, null, 2));
 }
 
 function serveFile(
   res: http.ServerResponse,
-  fileName: "index.html" | "llms.txt",
+  fileName: "index.html" | "llms.txt" | "styles.css" | "app.js" | "og.png",
   contentType: string,
+  head = false,
 ): void {
   try {
-    const source = fs.readFileSync(path.join(PUBLIC_DIR, fileName), "utf8");
-    res.writeHead(200, { "Content-Type": contentType });
-    res.end(source);
+    const source = fs.readFileSync(
+      path.join(PUBLIC_DIR, fileName),
+      fileName === "og.png" ? undefined : "utf8",
+    );
+    res.writeHead(200, {
+      ...SECURITY_HEADERS,
+      "Cache-Control": "no-store",
+      "Content-Type": contentType,
+    });
+    res.end(head ? undefined : source);
   } catch {
-    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.writeHead(500, {
+      ...SECURITY_HEADERS,
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     res.end("Could not load local containment page");
   }
 }
@@ -54,22 +96,87 @@ export function createDashboardServer(): http.Server {
     const route = requestUrl.pathname;
 
     if (route === "/api/health" && (req.method === "GET" || req.method === "HEAD")) {
-      if (req.method === "HEAD") {
-        res.writeHead(200, { "Cache-Control": "no-store" });
-        res.end();
-      } else {
-        jsonResponse(res, 200, CONTAINMENT_STATUS);
-      }
+      jsonResponse(res, 200, CONTAINMENT_STATUS, req.method === "HEAD");
+      return;
+    }
+
+    if (route === "/api/health" && req.method === "OPTIONS") {
+      res.writeHead(204, {
+        ...SECURITY_HEADERS,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Cache-Control": "no-store",
+      });
+      res.end();
+      return;
+    }
+
+    if (route === "/api/health") {
+      res.setHeader("Allow", "GET, HEAD, OPTIONS");
+      jsonResponse(res, 405, {
+        error: {
+          code: "METHOD_NOT_ALLOWED",
+          message: "This status endpoint supports GET and HEAD only.",
+        },
+        outboundRequestsMade: 0,
+      });
       return;
     }
 
     if (
-      (route === "/api/preflight" || route === "/api/trust" || route === "/api/x402-summary") &&
+      route === "/api/evidence-status" &&
+      (req.method === "GET" || req.method === "HEAD")
+    ) {
+      jsonResponse(
+        res,
+        200,
+        createPublicEvidenceStatus({
+          environment: "local",
+          gitCommitSha: null,
+          servedAt: new Date().toISOString(),
+        }),
+        req.method === "HEAD",
+      );
+      return;
+    }
+
+    if (
+      route === "/api/evidence-status" &&
       req.method === "OPTIONS"
     ) {
       res.writeHead(204, {
+        ...SECURITY_HEADERS,
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Cache-Control": "no-store",
+      });
+      res.end();
+      return;
+    }
+
+    if (route === "/api/evidence-status") {
+      res.setHeader("Allow", "GET, HEAD, OPTIONS");
+      jsonResponse(res, 405, {
+        error: {
+          code: "METHOD_NOT_ALLOWED",
+          message: "This evidence status endpoint supports GET and HEAD only.",
+        },
+      });
+      return;
+    }
+
+    if (
+      (route === "/api/preflight" ||
+        route === "/api/trust" ||
+        route === "/api/x402-summary") &&
+      req.method === "OPTIONS"
+    ) {
+      res.writeHead(204, {
+        ...SECURITY_HEADERS,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
         "Cache-Control": "no-store",
       });
@@ -82,17 +189,17 @@ export function createDashboardServer(): http.Server {
       return;
     }
 
-    if (route === "/llms.txt" && req.method === "GET") {
-      serveFile(res, "llms.txt", "text/plain; charset=utf-8");
+    const asset = PUBLIC_ASSETS.get(route);
+    if (asset && (req.method === "GET" || req.method === "HEAD")) {
+      serveFile(res, asset[0], asset[1], req.method === "HEAD");
       return;
     }
 
-    if (route === "/" && req.method === "GET") {
-      serveFile(res, "index.html", "text/html; charset=utf-8");
-      return;
-    }
-
-    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.writeHead(404, {
+      ...SECURITY_HEADERS,
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     res.end("Not found");
   });
 }

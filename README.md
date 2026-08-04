@@ -16,9 +16,10 @@ This branch is in source-containment and deterministic-fixture mode:
 - The separate `effect:verify` CLI performs local Ed25519 verification against an out-of-band registry hash; it exposes no network, database-write, retry, wallet, signer, transaction, or payment path.
 - Journal-bound bundle v0.2 persists branded Base/effect inputs and deterministic shadow results behind two adjacent journal commits; every execution flag remains false.
 - The `shadow:run` operator CLI composes those boundaries from a separately pinned manifest and an existing journaled attempt. It fetches only registry-pinned read-only Base RPC methods, never fetches the operation URL, and emits no retry or action directive beyond `none`.
+- The production web console at [canary.0x402.sh](https://canary.0x402.sh) reads only same-origin containment and release-status metadata. It does not expose private journals, artifacts, operation data, effect IDs, or retry verdicts and has no input or execution control.
 - Tests and CI make no production payment.
 
-The source changes have not been deployed or independently verified on the live Vercel and Bankr surfaces. Do not describe the production service as contained until deployment, Bankr unpublish/disable, and post-deployment verification are complete.
+The Vercel console and its legacy routes are a separate surface from any historical Bankr listing. A healthy console or HTTP 410 from Vercel does not prove that Bankr has paused or removed a separately hosted service.
 
 ## What is implemented
 
@@ -135,10 +136,13 @@ An identical signed-request replay is safe only after the route's replay contrac
 
 ## Public routes in this branch
 
-- `GET /api/health` — local containment status; zero outbound requests.
+- `GET /api/evidence-status` — sanitized, read-only evidence-release and deployment metadata; zero outbound requests.
+- `GET /api/health` — containment status; zero outbound requests.
 - `GET /api/trust` — legacy route; HTTP 410; zero outbound requests.
 - `POST /api/preflight` — legacy route; HTTP 410; zero outbound requests.
 - `x402/trust` — disabled paid-handler source; HTTP 410; zero outbound requests.
+
+The browser fetches only `/api/health` and `/api/evidence-status` from its own origin. The evidence status identifies the verified core commit separately from the currently deployed UI commit and makes every payment, wallet, signing, transaction, retry, action, caller-target, and public-outbound capability explicitly false. It is release evidence, not a live view into private operator data and not permission to execute anything.
 
 ## Not yet production-ready
 
@@ -158,7 +162,8 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 
 ## Repository layout
 
-- `api/`, `x402/`, `public/` — contained public surface.
+- `api/`, `x402/`, `public/` — contained public surface and read-only evidence console.
+- `src/public-evidence-status.ts` — immutable allowlisted public release DTO; no evidence-store or action imports.
 - `src/index.ts`, `src/dashboard.ts`, `src/canary.ts` — contained loopback start path; no scheduler or generic outbound checker.
 - `contracts/` — pinned acceptance contracts.
 - `src/x402-challenge.ts` — exact-only challenge and no-spend predicate evaluation.
@@ -174,4 +179,4 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 
 ## Deployment
 
-Production is configured at [canary.0x402.sh](https://canary.0x402.sh). This repository historically auto-deploys from `main`; verify the actual project settings before merging. A source merge alone does not prove the Bankr listing has been removed or that live legacy routes are non-charging.
+Production is configured at [canary.0x402.sh](https://canary.0x402.sh). Releases must verify the exact Git commit in `/api/evidence-status`, the security headers and static assets, both disabled legacy routes, and the absence of any undocumented public function. A source merge or successful Vercel deployment does not prove that a separate Bankr listing has been paused or removed.
