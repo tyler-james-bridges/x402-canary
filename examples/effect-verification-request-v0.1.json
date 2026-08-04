@@ -1,0 +1,18 @@
+{
+  "query": {
+    "contractId": "sha256:c05b9cdf212ad7734239d63c64bc2ae9f9dfb1a65e13812267311955ed0bdc12",
+    "operation": {
+      "url": "https://effects.example/v1/send",
+      "method": "POST",
+      "headers": {
+        "content-type": "application/json",
+        "idempotency-key": "01J4AIFI8DQ5F4V3T73Z9M6Y2X"
+      },
+      "body": {
+        "message": "hello"
+      }
+    },
+    "operationStartedAt": "2026-08-03T12:00:00.000Z"
+  },
+  "verifiedAt": "2026-08-03T12:06:02.000Z"
+}

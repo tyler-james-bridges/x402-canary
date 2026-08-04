@@ -23,7 +23,7 @@ The production boundary therefore has four parts:
 3. The pure kernel recomputes the decision from those pre-validated facts.
 4. A persistence layer binds the resulting bundle to the verified journal head.
 
-Parts 1 and 3 and the underlying journal primitive are implemented. Base Collector v0.1 lives in `src/evidence/base-rpc.ts`, with its separate trust boundary documented in `docs/base-collector-v0.1.md`. The v0.1 bundle intentionally does not consume its collection attestation; the authority-bound v0.2 wrapper, operator adapter, and bundle-to-journal binding remain separate work.
+Parts 1 and 3 and the underlying journal primitive are implemented. Base Collector v0.1 lives in `src/evidence/base-rpc.ts`, with its separate trust boundary documented in `docs/base-collector-v0.1.md`. The local Ed25519 verification half of part 2 lives in `src/evidence/effect-authority.ts` and is documented in `docs/effect-authority-v0.1.md`; the real operator-owned adapter is not implemented. The v0.1 bundle intentionally consumes neither authority artifact. The authority-bound v0.2 wrapper and bundle-to-journal binding remain separate work.
 
 ## Canonical identities
 
@@ -63,7 +63,7 @@ Any used state without a receipt remains unknown because USDC uses the same stat
 
 Effect observations bind the operation ID, system query key, effect type, effect ID, and payload hash. An authoritative commit proves one effect. An authoritative absence is accepted only after the effect contract’s `finalAfter`. Conflicting commits, commit/absence disagreement, or multiple effect IDs fail closed.
 
-The evaluator cannot decide whether a database is authoritative. That must be established by the operator adapter and deployment policy.
+The evaluator cannot decide whether a database is authoritative. The separate Effect Authority v0.1 verifier can prove that a configured Ed25519 authority signed a policy-matching one/zero/multiple/unknown statement, but a real operator adapter and deployment review must still establish that the signed claim came from the intended system of record.
 
 ## Retry verdicts
 

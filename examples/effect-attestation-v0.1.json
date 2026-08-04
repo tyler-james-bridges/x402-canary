@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "0.1",
+  "protected": {
+    "algorithm": "Ed25519",
+    "keyId": "sha256:96addeeb3cd90fe660dc1a42ab79a2fab21e37ffe6d17b9976e4a540c33239db"
+  },
+  "payload": {
+    "registryHash": "sha256:f06a237ee94a3da72c52a64b6b87727dbf1c1724d94ed2f55df680d2d8029db3",
+    "authorityId": "primary-sor",
+    "contractId": "sha256:c05b9cdf212ad7734239d63c64bc2ae9f9dfb1a65e13812267311955ed0bdc12",
+    "operationId": "sha256:c0b2eea3b1de321cb5cb6c4f8538f2390b82fd7209fba32634b0c6bb5116d901",
+    "operationStartedAt": "2026-08-03T12:00:00.000Z",
+    "adapterId": "effects-read-adapter",
+    "adapterVersion": "v1.0.0",
+    "environment": "production",
+    "tenantIdHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "queryKeyHash": "sha256:d0b1a8e0f67eaf5aba2cbd91dc79f4d5828541a046069ad7d0f85203f3ea700c",
+    "effectType": "message.delivery",
+    "payloadProjectionId": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "observedAt": "2026-08-03T12:06:00.000Z",
+    "signedAt": "2026-08-03T12:06:01.000Z",
+    "outcome": {
+      "kind": "zero",
+      "closure": {
+        "markerType": "outbox-watermark",
+        "markerHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "consistency": "linearizable",
+        "effectSetComplete": true,
+        "eligibleThrough": "2026-08-03T12:05:00.000Z",
+        "closedAt": "2026-08-03T12:05:00.000Z"
+      }
+    }
+  },
+  "signature": "MgfD1kyhpMATTFjkX4-d-NeNaH6zYauVdXlO_UIYK0LS2nssQ1ZYz7yM0YtbJh1YmyU_Q1MOdgicAP_2m-UNDA"
+}

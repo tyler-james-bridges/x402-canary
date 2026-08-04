@@ -9,6 +9,7 @@
     "verify": "tsx src/verify.ts",
     "evidence": "tsx src/evidence-cli.ts",
     "base:collect": "tsx src/base-evidence-collect-cli.ts",
+    "effect:verify": "tsx src/effect-attestation-verify-cli.ts",
     "test": "tsx --test src/__tests__/*.test.ts",
     "test:containment": "tsx --test src/__tests__/public-containment.test.ts",
     "typecheck": "tsc --noEmit",

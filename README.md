@@ -13,6 +13,7 @@ This branch is in source-containment and deterministic-fixture mode:
 - The CLI rejects `--pay` before loading a contract, and the executable AgentCash adapter is a fail-closed stub with no subprocess or wallet path.
 - The evidence CLI evaluates sanitized files only; it has no RPC, wallet, signer, URL-fetch, or payment option.
 - The separate `base:collect` operator CLI performs registry-pinned, read-only Base RPC collection; it exposes no wallet, signer, transaction-submission, or payment method and is not imported by a public route.
+- The separate `effect:verify` CLI performs local Ed25519 verification against an out-of-band registry hash; it exposes no network, database-write, retry, wallet, signer, transaction, or payment path.
 - Tests and CI make no production payment.
 
 The source changes have not been deployed or independently verified on the live Vercel and Bankr surfaces. Do not describe the production service as contained until deployment, Bankr unpublish/disable, and post-deployment verification are complete.
@@ -50,7 +51,9 @@ Evidence Kernel v0.1 adds the local evidence-producing primitives that were prev
 - authoritative business-effect reconciliation with duplicate and contradiction detection;
 - deterministic input and bundle hashes, conservative terminal states, separate same-authorization/new-authorization retry verdicts, and the one-settlement/one-effect invariant.
 
-Base Collector v0.1 now establishes the Base observations through a hashed two-source registry, HTTPS origin and DNS policy, a pinned Base genesis checkpoint, a unanimous shared `finalized` block, EIP-1898 state reads, and an upgrade-aware native-USDC code allowlist. Its sanitized live conformance receipt is checked in. The v0.1 kernel remains deliberately separate and does not upgrade its assurance merely because a collection document exists. An operator-owned system-of-record adapter must still establish effect authority, and a v0.2 wrapper must bind both authorities into the bundle.
+Base Collector v0.1 now establishes the Base observations through a hashed two-source registry, HTTPS origin and DNS policy, a pinned Base genesis checkpoint, a unanimous shared `finalized` block, EIP-1898 state reads, and an upgrade-aware native-USDC code allowlist. Its sanitized live conformance receipt is checked in.
+
+Effect Authority v0.1 adds a separate Ed25519 verification boundary. It content-addresses operator policy, derives the operation/query/finality coordinates locally, pins canonical public keys and key lifecycles, requires a complete linearizable post-horizon marker for authoritative absence, and converts only runtime-branded verification results into authoritative observations. A synthetic signed fixture is checked in. The legacy v0.1 kernel remains deliberately separate and does not upgrade its assurance merely because either authority artifact exists; the v0.2 wrapper must bind them into a journal-linked bundle.
 
 ## Run locally
 
@@ -82,6 +85,18 @@ npm run --silent base:collect -- \
 
 The output contains registry-bound public chain facts but no endpoint URL or credential. See `docs/base-collector-v0.1.md` for the exact trust boundary.
 
+Verify the synthetic system-of-record attestation without making a network request:
+
+```bash
+npm run --silent effect:verify -- \
+  sha256:f06a237ee94a3da72c52a64b6b87727dbf1c1724d94ed2f55df680d2d8029db3 \
+  examples/effect-authority-registry-v0.1.json \
+  examples/effect-verification-request-v0.1.json \
+  examples/effect-attestation-v0.1.json
+```
+
+The expected registry hash is an out-of-band trust pin, not evidence supplied by the attestation. See `docs/effect-authority-v0.1.md` for the signature, policy, clock, and remaining operator-adapter boundary.
+
 The packaged contract can perform a live, unpaid challenge request when run manually:
 
 ```bash
@@ -110,7 +125,7 @@ An identical signed-request replay is safe only after the route's replay contrac
 Evidence Kernel v0.1 is a deterministic local evaluator, not authorization to turn payment back on. Paid execution remains blocked until at least:
 
 - production RPC sources or a self-validating node replace the development public-provider pair, and their registry/collection digest is enforced by the v0.2 kernel rather than accepted as input data;
-- an operator-owned system-of-record adapter produces effect observations and establishes what `authoritative` means for each effect type;
+- an operator-owned read-only system-of-record adapter emits the implemented signed effect-attestation format and its uniqueness/closure claims are validated against the real store;
 - journal records and their verified head are bound to persisted terminal bundles, with a documented single-writer or cross-process locking model;
 - settlement submitter and recipient/router classification is implemented;
 - Base fork/RPC conformance and upgrade-aware native-USDC event-order coverage pass for the restricted slice;
@@ -127,9 +142,10 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 - `contracts/` — pinned acceptance contracts.
 - `src/x402-challenge.ts` — exact-only challenge and no-spend predicate evaluation.
 - `src/reconciliation-policy.ts` — pure terminal and retry-safety derivation.
-- `src/evidence/`, `src/evidence-cli.ts`, `src/base-evidence-collect-cli.ts`, `examples/` — Evidence Kernel primitives, the file-only evaluator, and the explicit read-only Base collector.
+- `src/evidence/`, `src/evidence-cli.ts`, `src/base-evidence-collect-cli.ts`, `src/effect-attestation-verify-cli.ts`, `examples/` — Evidence Kernel primitives, file-only evaluation, explicit read-only Base collection, and local signed-effect verification.
 - `docs/evidence-kernel-v0.1.md` — evidence contracts, trust boundary, verdict rules, and known limits.
 - `docs/base-collector-v0.1.md` — source registry, HTTPS/DNS boundary, finalized snapshot rules, and live conformance receipt.
+- `docs/effect-authority-v0.1.md` — Ed25519 registry/policy boundary, signed outcomes, key lifecycle, and operator-adapter limits.
 - `src/__tests__/` — deterministic containment, challenge, browser, proxy, and reconciliation fixtures.
 
 ## Deployment

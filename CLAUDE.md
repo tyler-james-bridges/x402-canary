@@ -51,6 +51,8 @@ git diff --check
 - `src/evidence-cli.ts`: file-only evidence recomputation; no RPC, wallet, signer, URL fetch, or payment path
 - `src/evidence/base-rpc.ts`: strict registry-bound, read-only Base collector with HTTPS/DNS, finality, checkpoint, and native-USDC identity checks
 - `src/base-evidence-collect-cli.ts`: explicit operator-only Base collection CLI; never import it into a public handler
+- `src/evidence/effect-authority.ts`: strict local Ed25519 authority/policy verification; only branded verified results may create authoritative effect observations
+- `src/effect-attestation-verify-cli.ts`: file-only signed-effect verifier with an out-of-band registry hash pin; never import it into a public handler
 - `examples/evidence-kernel-v0.1.*.json`: sanitized input and exact expected bundle
 - `examples/base-*.json`: secret-free Base registry/request and historical live conformance receipt
 - `src/verify.ts`: CLI with the paid-execution kill switch
@@ -64,10 +66,12 @@ The local v0.1 kernel now implements canonical request/authorization IDs, an app
 Do not enable paid execution until, at minimum:
 
 1. The v0.2 kernel verifies and binds the Base registry/collection digest rather than accepting raw v0.1 source labels; production sources must be distinct failure domains rather than a development public-RPC pair.
-2. An operator-owned system-of-record adapter defines and produces cryptographically authority-bound effect evidence.
+2. An operator-owned read-only system-of-record adapter emits the implemented signed-effect format, and its real uniqueness/linearizable-closure claims pass integration review.
 3. The verified journal head is bound into persisted terminal bundles, with a documented cross-process single-writer model and rollback checkpoint.
 4. Settlement submitter/router classification and independent delivery evidence are implemented where applicable.
 5. Base fork/RPC conformance and native-USDC upgrade/event-order coverage pass.
 6. The integrated adapters receive an external security review.
 
 Never promote a caller-supplied source label or `authoritative: true` flag into trusted evidence without the corresponding configured adapter.
+
+Evidence Kernel v0.1 intentionally remains a legacy prevalidated-input schema with `externalAuthorityProven: false`. Do not widen it. The future v0.2 path must accept signed envelopes or runtime-branded verification results and bind them to controlled journal timestamps.

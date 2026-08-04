@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "0.1",
+  "authorities": [
+    {
+      "authorityId": "primary-sor",
+      "keyId": "sha256:96addeeb3cd90fe660dc1a42ab79a2fab21e37ffe6d17b9976e4a540c33239db",
+      "algorithm": "Ed25519",
+      "usage": "effect_attestation",
+      "publicKeySpkiDerBase64url": "MCowBQYDK2VwAyEA1M61le0ftMURd4wpixHSou5PHWs4hlxjuB9MjWlviEs",
+      "validFrom": "2026-01-01T00:00:00.000Z",
+      "validUntil": "2027-01-01T00:00:00.000Z",
+      "revokedAt": null,
+      "allowedContractIds": [
+        "sha256:c05b9cdf212ad7734239d63c64bc2ae9f9dfb1a65e13812267311955ed0bdc12"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "contractId": "sha256:c05b9cdf212ad7734239d63c64bc2ae9f9dfb1a65e13812267311955ed0bdc12",
+      "authorityId": "primary-sor",
+      "adapterId": "effects-read-adapter",
+      "adapterVersion": "v1.0.0",
+      "environment": "production",
+      "tenantIdHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "effectType": "message.delivery",
+      "payloadProjectionId": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "query": {
+        "kind": "operation_header",
+        "name": "idempotency-key",
+        "canonicalization": "trim_outer_ows_v1"
+      },
+      "cardinality": {
+        "maximum": 1,
+        "enforcement": "primary_transactional_unique_constraint"
+      },
+      "finalizationDelaySeconds": 300,
+      "absence": {
+        "kind": "transactional_closure_marker",
+        "markerType": "outbox-watermark",
+        "requiredConsistency": "linearizable"
+      },
+      "freshness": {
+        "maxObservationToSignatureSeconds": 60,
+        "maxAttestationAgeSeconds": 600
+      }
+    }
+  ]
+}
