@@ -1053,6 +1053,11 @@ function observationsFor(
   return deepFreeze([{ ...base, status: "unknown", authoritative: false }] as EffectObservation[]);
 }
 
+/** Strictly validate and content-address an envelope without granting authority. */
+export function computeEffectAttestationHash(input: unknown): string {
+  return hashCanonical(ATTESTATION_HASH_DOMAIN, validateAttestation(input));
+}
+
 /** Verify a strict signed effect statement against a branded registry/query. */
 export function verifyEffectAttestation(
   registry: EffectAuthorityRegistry,

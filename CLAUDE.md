@@ -53,6 +53,8 @@ git diff --check
 - `src/base-evidence-collect-cli.ts`: explicit operator-only Base collection CLI; never import it into a public handler
 - `src/evidence/effect-authority.ts`: strict local Ed25519 authority/policy verification; only branded verified results may create authoritative effect observations
 - `src/evidence/artifact-store.ts` and `src/evidence/journal-bundle.ts`: immutable v0.2 evidence artifacts, journal-head CAS closure, shadow-only bundles, offline integrity replay, and receipt recovery
+- `src/evidence/shadow-runner.ts`: strict, branded composition of an existing journaled attempt, registry-pinned Base collection, signed effects, v0.2 closure, exact replay, and sanitized no-action results
+- `src/shadow-run-cli.ts`: private operator entry point; production mode resolves only pinned HTTPS Base RPC sources and never fetches the operation URL
 - `src/effect-attestation-verify-cli.ts`: file-only signed-effect verifier with an out-of-band registry hash pin; never import it into a public handler
 - `examples/evidence-kernel-v0.1.*.json`: sanitized input and exact expected bundle
 - `examples/base-*.json`: secret-free Base registry/request and historical live conformance receipt
@@ -76,3 +78,5 @@ Do not enable paid execution until, at minimum:
 Never promote a caller-supplied source label or `authoritative: true` flag into trusted evidence without the corresponding configured adapter.
 
 Evidence Kernel v0.1 intentionally remains a legacy prevalidated-input schema with `externalAuthorityProven: false`. Do not widen it. Journal-bound v0.2 accepts runtime-branded Base/effect results, derives the legacy input, and binds it to controlled journal timestamps, but it remains shadow-only and grants no execution authority.
+
+Shadow Runner v0.1 is the only composed operator path. It requires a separately pinned manifest and an existing journal, creates all runtime authority brands in process, and emits a sanitized result with `actionDirective: "none"`. Do not add operation execution, authorization creation/signing/transmission, retry, arbitrary RPC URLs, wallet access, payment, public routes, scheduling, or deployment behavior to this path.

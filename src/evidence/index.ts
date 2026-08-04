@@ -7,4 +7,5 @@ export * from "./base-rpc.js";
 export * from "./effect.js";
 export * from "./effect-authority.js";
 export * from "./journal-bundle.js";
+export * from "./shadow-runner.js";
 export * from "./kernel.js";

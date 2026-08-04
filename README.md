@@ -15,6 +15,7 @@ This branch is in source-containment and deterministic-fixture mode:
 - The separate `base:collect` operator CLI performs registry-pinned, read-only Base RPC collection; it exposes no wallet, signer, transaction-submission, or payment method and is not imported by a public route.
 - The separate `effect:verify` CLI performs local Ed25519 verification against an out-of-band registry hash; it exposes no network, database-write, retry, wallet, signer, transaction, or payment path.
 - Journal-bound bundle v0.2 persists branded Base/effect inputs and deterministic shadow results behind two adjacent journal commits; every execution flag remains false.
+- The `shadow:run` operator CLI composes those boundaries from a separately pinned manifest and an existing journaled attempt. It fetches only registry-pinned read-only Base RPC methods, never fetches the operation URL, and emits no retry or action directive beyond `none`.
 - Tests and CI make no production payment.
 
 The source changes have not been deployed or independently verified on the live Vercel and Bankr surfaces. Do not describe the production service as contained until deployment, Bankr unpublish/disable, and post-deployment verification are complete.
@@ -58,6 +59,8 @@ Effect Authority v0.1 adds a separate Ed25519 verification boundary. It content-
 
 Journal-bound bundle v0.2 now binds the unique journaled attempt start, the authorization-bound Base audit artifact, timestamped signed-effect audit artifacts, the exact derived v0.1 evaluator input, and its deterministic result into immutable artifacts and two globally adjacent journal commits. A separate non-circular receipt supports offline local-integrity replay and deterministic receipt recovery. Its assurance explicitly discloses caller-declared attempt predicates, trusted-local-writer dependence, lack of historical transport/signature reauthentication, lack of an external anti-rollback checkpoint, and disabled action/payment/transaction/retry execution.
 
+Shadow Runner v0.1 composes the collector, authority verifier, journal, artifact store, and v0.2 closure behind one private operator command. A strict manifest is content-addressed separately from trust pins; the runner binds the current journal head, attempt-open record, operation, authorization, Base registry, and every effect registry/contract/attestation before it performs a read. Fresh closure and exact replay both verify the persisted graph, while exact replay intentionally performs no new RPC request or time-sensitive signature check.
+
 ## Run locally
 
 Install dependencies, then run the deterministic suite:
@@ -99,6 +102,20 @@ npm run --silent effect:verify -- \
 ```
 
 The expected registry hash is an out-of-band trust pin, not evidence supplied by the attestation. See `docs/effect-authority-v0.1.md` for the signature, policy, clock, and remaining operator-adapter boundary.
+
+Hash a private shadow manifest, then close an already journaled attempt using separately prepared trust pins:
+
+```bash
+npm run --silent shadow:run -- hash private/shadow-manifest.json
+
+npm run --silent shadow:run -- close \
+  private/shadow-trust-pins.json \
+  private/shadow-manifest.json \
+  private/evidence-journal.jsonl \
+  private/evidence-artifacts
+```
+
+`close` contacts only the HTTPS origins named by the pinned Base registry and resolved through its environment-variable names. It cannot create or transmit an authorization, sign, submit a transaction, execute the operation, retry, use a wallet, or pay. Do not place endpoint credentials, payment headers, authorization/payment signatures, private keys, or other secrets in the manifest. A public signature inside a required effect attestation is expected and is redacted from output. See `docs/shadow-runner-v0.1.md` for the schemas and operator sequence.
 
 The packaged contract can perform a live, unpaid challenge request when run manually:
 
@@ -147,10 +164,12 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 - `src/x402-challenge.ts` — exact-only challenge and no-spend predicate evaluation.
 - `src/reconciliation-policy.ts` — pure terminal and retry-safety derivation.
 - `src/evidence/`, `src/evidence-cli.ts`, `src/base-evidence-collect-cli.ts`, `src/effect-attestation-verify-cli.ts`, `examples/` — Evidence Kernel primitives, file-only evaluation, explicit read-only Base collection, and local signed-effect verification.
+- `src/evidence/shadow-runner.ts`, `src/shadow-run-cli.ts` — strict private shadow orchestration and the production HTTPS-only operator entry point.
 - `docs/evidence-kernel-v0.1.md` — evidence contracts, trust boundary, verdict rules, and known limits.
 - `docs/base-collector-v0.1.md` — source registry, HTTPS/DNS boundary, finalized snapshot rules, and live conformance receipt.
 - `docs/effect-authority-v0.1.md` — Ed25519 registry/policy boundary, signed outcomes, key lifecycle, and operator-adapter limits.
 - `docs/journal-bound-bundles-v0.2.md` — artifact DAG, two journal anchors, exact replay, crash recovery, local-integrity verification, and remaining anti-rollback/authority boundaries.
+- `docs/shadow-runner-v0.1.md` — manifest/pin separation, no-action orchestration, sanitized output, deterministic conformance matrix, and operator procedure.
 - `src/__tests__/` — deterministic containment, challenge, browser, proxy, and reconciliation fixtures.
 
 ## Deployment

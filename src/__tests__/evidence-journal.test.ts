@@ -8,6 +8,7 @@ import {
   rename,
   rm,
   stat,
+  symlink,
   truncate,
   unlink,
   writeFile,
@@ -542,6 +543,85 @@ test("a second in-process handle is rejected until the journal is closed", async
     const second = await EvidenceJournal.open(journalPath);
     await second.close();
   });
+});
+
+test("openExisting opens durable journal state without changing its identity", async () => {
+  await withTempJournal(async (journalPath) => {
+    const created = await EvidenceJournal.open(journalPath);
+    const first = await created.append(event("evt-open-existing"));
+    const journalId = created.journalId;
+    await created.close();
+
+    const existing = await EvidenceJournal.openExisting(journalPath);
+    assert.equal(existing.journalId, journalId);
+    assert.deepEqual(existing.readAll(), [first]);
+    const second = await existing.append(
+      event("evt-open-existing-second", {
+        kind: "authorization_recorded",
+        authorizationId: AUTHORIZATION_ID,
+      }),
+    );
+    assert.equal(second.previousHash, first.recordHash);
+    await existing.close();
+  });
+});
+
+test("openExisting rejects a missing journal without creating parent, data, metadata, or lock", async () => {
+  const root = await mkdtemp(join(tmpdir(), "x402-evidence-open-existing-missing-"));
+  try {
+    const missingParent = join(root, "must-not-exist");
+    const missingPath = join(missingParent, "events.jsonl");
+    await assert.rejects(EvidenceJournal.openExisting(missingPath));
+    await assert.rejects(stat(missingParent));
+    await assert.rejects(stat(missingPath));
+    await assert.rejects(stat(`${missingPath}.meta.json`));
+    await assert.rejects(stat(`${missingPath}.lock`));
+
+    const existingParent = join(root, "existing");
+    const seed = await EvidenceJournal.open(join(existingParent, "seed.jsonl"));
+    await seed.close();
+    const absentPath = join(existingParent, "absent.jsonl");
+    await assert.rejects(
+      EvidenceJournal.openExisting(absentPath),
+      /Existing journal is required/,
+    );
+    await assert.rejects(stat(absentPath));
+    await assert.rejects(stat(`${absentPath}.meta.json`));
+    await assert.rejects(stat(`${absentPath}.lock`));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("openExisting rejects symlinked journal parents and final paths", async () => {
+  const root = await mkdtemp(join(tmpdir(), "x402-evidence-open-existing-symlink-"));
+  try {
+    const realParent = join(root, "real");
+    const realPath = join(realParent, "events.jsonl");
+    const journal = await EvidenceJournal.open(realPath);
+    await journal.append(event("evt-symlink-target"));
+    await journal.close();
+
+    const linkedParent = join(root, "linked-parent");
+    await symlink(realParent, linkedParent, "dir");
+    await assert.rejects(
+      EvidenceJournal.openExisting(join(linkedParent, "events.jsonl")),
+      /Existing journal directory must not be a symbolic link/,
+    );
+
+    const ordinaryParent = join(root, "ordinary");
+    const ordinarySeed = await EvidenceJournal.open(join(ordinaryParent, "seed.jsonl"));
+    await ordinarySeed.close();
+    const linkedFinal = join(ordinaryParent, "events.jsonl");
+    await symlink(realPath, linkedFinal, "file");
+    await assert.rejects(
+      EvidenceJournal.openExisting(linkedFinal),
+      /Journal path must be a regular file and must not be a symbolic link/,
+    );
+    await assert.rejects(stat(`${linkedFinal}.lock`));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("a writer in another process excludes this process until clean close", async () => {

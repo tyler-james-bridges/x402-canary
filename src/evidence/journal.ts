@@ -629,6 +629,18 @@ export class EvidenceJournal {
   }
 
   static async open(path: string): Promise<EvidenceJournal> {
+    return EvidenceJournal.openInternal(path, true);
+  }
+
+  /** Open an existing operator journal without creating its directory, data, or metadata. */
+  static async openExisting(path: string): Promise<EvidenceJournal> {
+    return EvidenceJournal.openInternal(path, false);
+  }
+
+  private static async openInternal(
+    path: string,
+    allowCreate: boolean,
+  ): Promise<EvidenceJournal> {
     if (typeof path !== "string" || path.length === 0) throw new Error("Journal path is required");
     const absolutePath = resolve(path);
     if (openJournalPaths.has(absolutePath)) {
@@ -642,8 +654,15 @@ export class EvidenceJournal {
       | undefined;
     try {
       const directoryPath = dirname(absolutePath);
-      const createdDirectory = await mkdir(directoryPath, { recursive: true, mode: 0o700 });
-      if (createdDirectory !== undefined) await chmodBestEffort(directoryPath, 0o700);
+      if (allowCreate) {
+        const createdDirectory = await mkdir(directoryPath, { recursive: true, mode: 0o700 });
+        if (createdDirectory !== undefined) await chmodBestEffort(directoryPath, 0o700);
+      } else {
+        const directory = await lstat(directoryPath);
+        if (directory.isSymbolicLink() || !directory.isDirectory()) {
+          throw new Error("Existing journal directory must not be a symbolic link");
+        }
+      }
 
       writerLock = await acquireWriterLock(absolutePath, directoryPath);
       let journalExisted = false;
@@ -656,10 +675,21 @@ export class EvidenceJournal {
       } catch (error) {
         if (!isNodeError(error) || error.code !== "ENOENT") throw error;
       }
+      if (!journalExisted && !allowCreate) {
+        throw new Error("Existing journal is required");
+      }
 
-      const metadata = await loadOrCreateMetadata(absolutePath, directoryPath, !journalExisted);
+      const metadata = await loadOrCreateMetadata(
+        absolutePath,
+        directoryPath,
+        allowCreate && !journalExisted,
+      );
 
-      const flags = constants.O_APPEND | constants.O_CREAT | constants.O_RDWR | (constants.O_NOFOLLOW ?? 0);
+      const flags =
+        constants.O_APPEND |
+        constants.O_RDWR |
+        (allowCreate ? constants.O_CREAT : 0) |
+        (constants.O_NOFOLLOW ?? 0);
       handle = await open(absolutePath, flags, 0o600);
       const openedStat = await handle.stat();
       if (!openedStat.isFile()) throw new Error("Journal path must resolve to a regular file");

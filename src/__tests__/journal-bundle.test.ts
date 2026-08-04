@@ -56,6 +56,8 @@ const AUTHORIZED_AT = "2026-08-04T02:00:01.000Z";
 const COLLECTED_AT = "2026-08-04T02:05:00.000Z";
 const EVALUATED_AT = "2026-08-04T02:10:00.000Z";
 const HASH_A = `0x${"a".repeat(64)}`;
+const PENDING_TRANSACTION_HASH = `0x${"9".repeat(64)}`;
+const PENDING_BLOCK_HASH = `0x${"b".repeat(64)}`;
 const IMPLEMENTATION = `0x${"1".repeat(40)}`;
 const FROM = `0x${"2".repeat(40)}`;
 const TO = `0x${"3".repeat(40)}`;
@@ -185,6 +187,25 @@ class DeterministicBaseRpc implements BaseRpcRequester {
     }
     if (method === "eth_getTransactionReceipt") return null;
     throw new Error(`unexpected RPC method: ${method}`);
+  }
+}
+
+class PendingFinalityBaseRpc extends DeterministicBaseRpc {
+  override async request(
+    sourceId: string,
+    method: BaseReadRpcMethod,
+    params: readonly JsonValue[],
+  ): Promise<unknown> {
+    if (method === "eth_getTransactionReceipt") {
+      return {
+        transactionHash: PENDING_TRANSACTION_HASH,
+        blockHash: PENDING_BLOCK_HASH,
+        blockNumber: "0x79",
+        status: "0x1",
+        logs: [],
+      };
+    }
+    return super.request(sourceId, method, params);
   }
 }
 
@@ -519,6 +540,50 @@ test("a cloned Base collection loses its runtime authority before any input comm
     );
     assert.deepEqual(harness.journal.head(), headBefore);
     assert.equal((await harness.artifactStore.inspect()).artifacts.length, 0);
+  });
+});
+
+test("a runtime-verified Base collection pending finality fails before artifacts or input commit", async () => {
+  await withHarness(async (harness) => {
+    const pendingCollection = await collectBaseEvidence(
+      harness.registry,
+      new PendingFinalityBaseRpc(),
+      {
+        authorization: harness.core.authorization,
+        collectedAt: COLLECTED_AT,
+        transactionHash: PENDING_TRANSACTION_HASH,
+      },
+    );
+    assert.equal(pendingCollection.readiness, "pending_finality");
+    assert.ok(pendingCollection.reasons.includes("RECEIPT_PENDING_FINALITY"));
+
+    const recordsBefore = harness.journal.readAll();
+    const headBefore = harness.journal.head();
+    await assert.rejects(
+      closeJournalBoundEvidenceBundle(
+        closureInput(harness, { baseCollection: pendingCollection }),
+      ),
+      bundleError("BASE_COLLECTION_NOT_KERNEL_READY"),
+    );
+
+    assert.deepEqual(harness.journal.readAll(), recordsBefore);
+    assert.deepEqual(harness.journal.head(), headBefore);
+    assert.equal(
+      harness.journal
+        .readAll()
+        .some(
+          (record) =>
+            record.kind === "kernel_input_committed" ||
+            record.kind === "kernel_bundle_committed",
+        ),
+      false,
+    );
+    assert.deepEqual(await harness.artifactStore.inspect(), {
+      artifacts: [],
+      temporaryFiles: [],
+      unexpectedFiles: [],
+      errors: [],
+    });
   });
 });
 

@@ -23,7 +23,7 @@ The production boundary therefore has four parts:
 3. The pure kernel recomputes the decision from those pre-validated facts.
 4. A persistence layer binds the resulting bundle to the verified journal head.
 
-Parts 1 and 3 and the underlying journal primitive are implemented. Base Collector v0.1 lives in `src/evidence/base-rpc.ts`, with its separate trust boundary documented in `docs/base-collector-v0.1.md`. The local Ed25519 verification half of part 2 lives in `src/evidence/effect-authority.ts` and is documented in `docs/effect-authority-v0.1.md`; the real operator-owned adapter is not implemented. The v0.1 bundle intentionally consumes neither authority artifact. The authority-bound v0.2 wrapper and bundle-to-journal binding remain separate work.
+Parts 1, 3, and 4 are implemented for local shadow evaluation. Base Collector v0.1 lives in `src/evidence/base-rpc.ts`, with its separate trust boundary documented in `docs/base-collector-v0.1.md`. The local Ed25519 verification half of part 2 lives in `src/evidence/effect-authority.ts` and is documented in `docs/effect-authority-v0.1.md`; the real operator-owned adapter is not implemented. The legacy v0.1 bundle intentionally consumes neither authority artifact. Journal-bound bundle v0.2 and Shadow Runner v0.1 compose the branded runtime results without changing v0.1's assurance claims; see `docs/journal-bound-bundles-v0.2.md` and `docs/shadow-runner-v0.1.md`.
 
 ## Canonical identities
 
@@ -78,7 +78,7 @@ Unknown evidence makes both verdicts false.
 
 `EvidenceJournal` writes canonical JSONL records with sequence numbers, previous-record hashes, record hashes, private file modes, fsync, torn-write detection, tamper validation, duplicate-event rejection, recursive secret-key rejection, and serialized in-process appends.
 
-The current lock is process-local. Deployments must enforce a single writer or add cross-process locking before treating the journal as a production ledger. The bundle is not yet cryptographically bound to a verified journal head.
+The journal now uses an exclusive sentinel for cooperating processes in addition to in-process serialization. A crash can leave that sentinel behind, so operators must prove the prior writer dead before manual recovery. The legacy v0.1 bundle is not journal-bound; the separate v0.2 wrapper binds its derived v0.1 input and result to two adjacent head-CAS journal commits. Neither version has an external anti-rollback checkpoint.
 
 ## Recompute the example
 

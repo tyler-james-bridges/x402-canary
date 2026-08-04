@@ -30,7 +30,7 @@ Each contract ID is the domain-separated hash of every trusted policy field, inc
 
 The verifier derives the operation ID locally. It trims only outer HTTP optional whitespace from the idempotency key, requires a bounded printable value, and emits only a domain-separated query-key hash. The raw key is never retained in the resolved query, verified result, observations, errors, or example output.
 
-`finalAfter` is computed as the controlled `operationStartedAt` plus the contract delay. It is not accepted from the signed wire object. Until the journal-binding layer is complete, callers must treat both `operationStartedAt` and `verifiedAt` as controlled inputs rather than arbitrary request data.
+`finalAfter` is computed as the controlled `operationStartedAt` plus the contract delay. It is not accepted from the signed wire object. The Shadow Runner supplies `operationStartedAt` from the pinned `attempt_opened` record and calls its injected clock exactly once for `verifiedAt`; direct library callers must provide equally controlled inputs.
 
 ## Signature and key rules
 
@@ -80,4 +80,4 @@ The fixture key is synthetic; only its public key and a precomputed signature ar
 
 This verifier proves that the configured authority signed a policy-matching statement. It does not prove that an adapter actually queried the intended primary system of record, that the declared uniqueness constraint exists, or that a closure marker is truthful. Those properties require an operator-owned read-only adapter, credential-level write denial, deployment review, and independent integration testing.
 
-The next wrapper must accept signed envelopes or runtime-branded verified results—not raw `EffectObservation[]`—and bind the registry, resolution, attestation, Base collection, and journal heads into a new bundle schema. Evidence Kernel v0.1 must not be relabeled as externally authoritative.
+Journal-bound bundle v0.2 accepts only runtime-branded verified results—not raw `EffectObservation[]`—and binds the registry, resolution, attestation, Base collection, and journal head into immutable artifacts and adjacent commits. Shadow Runner v0.1 derives and verifies those brands in process from a separately pinned manifest. Exact replay rechecks the content-addressed attestation envelope and local bundle integrity, but deliberately does not perform a new time-sensitive signature verification. Evidence Kernel v0.1 must not be relabeled as externally authoritative.

@@ -457,6 +457,9 @@ export async function closeJournalBoundEvidenceBundle(input: {
   if (baseArtifact.authorizationId !== authorization.id) {
     fail("BASE_COLLECTION_AUTHORIZATION_MISMATCH");
   }
+  if (input.baseCollection.readiness !== "kernel_ready") {
+    fail("BASE_COLLECTION_NOT_KERNEL_READY");
+  }
   const evaluatedAtMs = canonicalTimestamp(core.evaluatedAt, "BOUND_CORE_EVALUATED_AT_INVALID");
   if (
     canonicalTimestamp(input.baseCollection.collectedAt, "BASE_COLLECTION_TIME_INVALID") >
