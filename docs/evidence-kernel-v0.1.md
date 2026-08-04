@@ -23,7 +23,7 @@ The production boundary therefore has four parts:
 3. The pure kernel recomputes the decision from those pre-validated facts.
 4. A persistence layer binds the resulting bundle to the verified journal head.
 
-Part 3 and the underlying journal primitive are implemented here; the collectors, operator adapter, and bundle-to-journal binding are not.
+Parts 1 and 3 and the underlying journal primitive are implemented. Base Collector v0.1 lives in `src/evidence/base-rpc.ts`, with its separate trust boundary documented in `docs/base-collector-v0.1.md`. The v0.1 bundle intentionally does not consume its collection attestation; the authority-bound v0.2 wrapper, operator adapter, and bundle-to-journal binding remain separate work.
 
 ## Canonical identities
 

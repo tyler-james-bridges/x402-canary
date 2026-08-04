@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "0.1",
+  "registryHash": "sha256:d6cd8177a4ac649fe77bd8ba03d25aca428d62bf7994080a185d99ac5493d0bf",
+  "collectedAt": "2026-08-04T02:23:28.000Z",
+  "assurance": {
+    "transportAuthentication": "https_web_pki",
+    "sourceIdentity": "hashed_operator_registry",
+    "independence": "operator_declared_distinct_trust_domains",
+    "finality": "shared_finalized_block_hash",
+    "stateBinding": "eip1898_require_canonical",
+    "quorum": "unanimous",
+    "paymentExecutionEnabled": false
+  },
+  "finalizedAnchor": {
+    "blockNumber": "49509847",
+    "blockHash": "0xf19330c1458bad249de029ff9c8c26ffeaece6bb98d7d5e37945319340602934",
+    "blockTimestamp": "1785809041"
+  },
+  "nativeUsdc": {
+    "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "proxyCodeSha256": "sha256:98d785fcb1bf847f287adc2310759fd94cc13e754b974bc72131382e8266f607",
+    "implementationAddress": "0x2ce6311ddae708829bc0784c967b7d77d19fd779",
+    "implementationCodeSha256": "sha256:dcb3b7ca28662970d0a7cdad420e529fb837d7bf8a246b1a680c20e153db79e8",
+    "name": "USD Coin",
+    "version": "2",
+    "decimals": 6
+  },
+  "sources": [
+    {
+      "id": "base-official",
+      "label": "base-rpc:base-official:sha256:d6cd8177a4ac649fe77bd8ba03d25aca428d62bf7994080a185d99ac5493d0bf",
+      "trustDomain": "base.org",
+      "finalizedHeadBlockNumber": "49509847",
+      "finalizedHeadBlockHash": "0xf19330c1458bad249de029ff9c8c26ffeaece6bb98d7d5e37945319340602934"
+    },
+    {
+      "id": "publicnode",
+      "label": "base-rpc:publicnode:sha256:d6cd8177a4ac649fe77bd8ba03d25aca428d62bf7994080a185d99ac5493d0bf",
+      "trustDomain": "publicnode.com",
+      "finalizedHeadBlockNumber": "49509847",
+      "finalizedHeadBlockHash": "0xf19330c1458bad249de029ff9c8c26ffeaece6bb98d7d5e37945319340602934"
+    }
+  ],
+  "receiptObservations": [],
+  "authorizationStateObservations": [
+    {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "source": "base-rpc:base-official:sha256:d6cd8177a4ac649fe77bd8ba03d25aca428d62bf7994080a185d99ac5493d0bf",
+      "authorizer": "0x1111111111111111111111111111111111111111",
+      "nonce": "0x3333333333333333333333333333333333333333333333333333333333333333",
+      "used": false,
+      "observedBlockNumber": "49509847",
+      "observedBlockHash": "0xf19330c1458bad249de029ff9c8c26ffeaece6bb98d7d5e37945319340602934",
+      "observedBlockTimestamp": "1785809041",
+      "observedHeadBlockNumber": "49509847"
+    },
+    {
+      "networkId": "eip155:8453",
+      "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "source": "base-rpc:publicnode:sha256:d6cd8177a4ac649fe77bd8ba03d25aca428d62bf7994080a185d99ac5493d0bf",
+      "authorizer": "0x1111111111111111111111111111111111111111",
+      "nonce": "0x3333333333333333333333333333333333333333333333333333333333333333",
+      "used": false,
+      "observedBlockNumber": "49509847",
+      "observedBlockHash": "0xf19330c1458bad249de029ff9c8c26ffeaece6bb98d7d5e37945319340602934",
+      "observedBlockTimestamp": "1785809041",
+      "observedHeadBlockNumber": "49509847"
+    }
+  ],
+  "readiness": "kernel_ready",
+  "reasons": [
+    "TRANSACTION_HASH_NOT_PROVIDED"
+  ],
+  "observationHash": "sha256:da6916f4a1b5521cd8d2f44d4ea9b2398f9934c1dcb81e4999d3805c9962c325",
+  "collectionHash": "sha256:7875577927e3e868c073778cc3b4d801f1c5e69348f3bb306b275d465848ed60"
+}

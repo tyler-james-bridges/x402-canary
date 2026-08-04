@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "0.1",
+  "networkId": "eip155:8453",
+  "genesisBlockHash": "0xf712aa9241cc24369b143cf6dce85f0902a9731e70d66818a3a5845b296c73dd",
+  "sources": [
+    {
+      "id": "base-official",
+      "trustDomain": "base.org",
+      "expectedOrigin": "https://mainnet.base.org",
+      "endpointEnv": "BASE_RPC_OFFICIAL_URL"
+    },
+    {
+      "id": "publicnode",
+      "trustDomain": "publicnode.com",
+      "expectedOrigin": "https://base-rpc.publicnode.com",
+      "endpointEnv": "BASE_RPC_PUBLICNODE_URL"
+    }
+  ],
+  "nativeUsdc": {
+    "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "proxyImplementationSlot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3",
+    "allowedProxyCodeSha256": [
+      "sha256:98d785fcb1bf847f287adc2310759fd94cc13e754b974bc72131382e8266f607"
+    ],
+    "allowedImplementationCodeSha256": [
+      "sha256:dcb3b7ca28662970d0a7cdad420e529fb837d7bf8a246b1a680c20e153db79e8"
+    ],
+    "expectedName": "USD Coin",
+    "expectedVersion": "2",
+    "expectedDecimals": 6
+  }
+}

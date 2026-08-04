@@ -49,7 +49,10 @@ git diff --check
 - `src/reconciliation-policy.ts`: conservative fact-to-verdict retry policy
 - `src/evidence/`: canonical IDs, durable journal, Base/effect evaluators, and deterministic bundle kernel
 - `src/evidence-cli.ts`: file-only evidence recomputation; no RPC, wallet, signer, URL fetch, or payment path
+- `src/evidence/base-rpc.ts`: strict registry-bound, read-only Base collector with HTTPS/DNS, finality, checkpoint, and native-USDC identity checks
+- `src/base-evidence-collect-cli.ts`: explicit operator-only Base collection CLI; never import it into a public handler
 - `examples/evidence-kernel-v0.1.*.json`: sanitized input and exact expected bundle
+- `examples/base-*.json`: secret-free Base registry/request and historical live conformance receipt
 - `src/verify.ts`: CLI with the paid-execution kill switch
 - `src/__tests__/public-containment.test.ts`: executable containment assertions
 - `README.md`: user-facing status and remaining gates
@@ -60,9 +63,9 @@ The local v0.1 kernel now implements canonical request/authorization IDs, an app
 
 Do not enable paid execution until, at minimum:
 
-1. Independently configured Base RPC adapters collect and cross-check the receipt, canonical-head, finality, and `authorizationState` observations consumed by the pure evaluator.
-2. An operator-owned system-of-record adapter defines and produces authoritative effect evidence.
-3. The verified journal head is bound into persisted terminal bundles, with a documented cross-process single-writer model.
+1. The v0.2 kernel verifies and binds the Base registry/collection digest rather than accepting raw v0.1 source labels; production sources must be distinct failure domains rather than a development public-RPC pair.
+2. An operator-owned system-of-record adapter defines and produces cryptographically authority-bound effect evidence.
+3. The verified journal head is bound into persisted terminal bundles, with a documented cross-process single-writer model and rollback checkpoint.
 4. Settlement submitter/router classification and independent delivery evidence are implemented where applicable.
 5. Base fork/RPC conformance and native-USDC upgrade/event-order coverage pass.
 6. The integrated adapters receive an external security review.

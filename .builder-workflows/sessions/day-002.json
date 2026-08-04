@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "id": "day-002",
+  "series": "aifi-evidence-kernel",
+  "number": 2,
+  "arc": "base-authenticated-collection",
+  "status": "closed",
+  "startedAt": "2026-08-04T02:11:53.169Z",
+  "sourceIssue": null,
+  "repository": {
+    "root": "/Users/tjb/code/x402-canary",
+    "branch": "feat/base-evidence-kernel",
+    "head": "c69e3c0c28ce6cebccc24d3daec9e01791ad2bf3",
+    "startingStatus": []
+  },
+  "question": "Can independently configured HTTPS Base RPC sources produce registry-bound finalized native-USDC evidence for the kernel without exposing credentials or enabling writes?",
+  "startingState": "Commit c69e3c0 provides a fail-closed pure evaluator over trusted prevalidated observations, but source labels, RPC identity, canonical finalized anchors, and native-USDC runtime identity are not collected or proven.",
+  "boundedChange": "Add a strict hashed Base source registry, secret-resolved HTTPS JSON-RPC transport, two-source finalized-anchor collector, native-USDC proxy/implementation identity checks, receipt and authorizationState observation collection, sanitized provenance, deterministic fixtures, and adversarial tests. No wallet, signer, transaction submission, payment, deployment, or production mutation.",
+  "successCondition": "Two distinct trust domains agreeing on Base chain ID, a shared finalized block, allowed native-USDC code identity, receipt facts, and authorizationState produce deterministic registry-bound observations; malformed/config-drifted/redirecting/HTTP/wrong-chain/forked/token-mismatched/timeout/oversized responses fail closed; all prior tests and containment gates pass.",
+  "failureCondition": "Any caller-selected source label or URL is trusted, any secret appears in output/error/journal, any disagreement is silently quorum-accepted, any write RPC or payment path becomes reachable, or existing containment/evidence tests regress.",
+  "requiredReceipts": [
+    "Passing collector and source-registry tests using independent deterministic transports",
+    "Sanitized conformance fixture and reproducible collection provenance",
+    "Independent threat-model review of SSRF, source independence, finality, native-USDC identity, and secret handling"
+  ],
+  "testCommands": [
+    "npm test",
+    "npm run typecheck",
+    "npm run build",
+    "git diff --check"
+  ],
+  "events": [
+    {
+      "type": "decision",
+      "note": "Collector requires unanimity across sorted registry sources with distinct declared trust domains; no majority vote can suppress a contradiction.",
+      "value": "src/evidence/base-rpc.ts",
+      "at": "2026-08-04T02:26:17.970Z"
+    },
+    {
+      "type": "decision",
+      "note": "Authoritative state and code reads are bound to one shared Base finalized block hash using EIP-1898 requireCanonical, with chain ID plus genesis checkpoint verification.",
+      "value": "docs/base-collector-v0.1.md",
+      "at": "2026-08-04T02:26:18.035Z"
+    },
+    {
+      "type": "decision",
+      "note": "Unknown native-USDC proxy or implementation bytecode opens the circuit until the allowlist and Circle event-order assumptions are reviewed.",
+      "value": "examples/base-source-registry-v0.1.json",
+      "at": "2026-08-04T02:26:18.097Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Live read-only conformance passed against the official Base RPC and PublicNode at one unanimous finalized anchor, including genesis, USDC proxy/implementation, metadata, and EIP-1898 authorizationState.",
+      "value": "examples/base-collection-v0.1.live.json",
+      "at": "2026-08-04T02:26:18.161Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Frozen Session 2 gates passed: 203 tests, TypeScript typecheck, clean build, diff check, and live receipt byte parity.",
+      "value": "npm test && npm run typecheck && npm run build && git diff --check",
+      "at": "2026-08-04T02:31:42.964Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Deterministic adversarial collector tests cover registry drift, endpoint mutation, private/reserved DNS, JSON-RPC envelopes, wrong chain/genesis/fork/code/state, finalized receipt disagreement, pending finality, and read-only method containment.",
+      "value": "src/__tests__/base-rpc.test.ts",
+      "at": "2026-08-04T02:31:43.031Z"
+    },
+    {
+      "type": "failure",
+      "note": "Independent review found mutable resolved source metadata could redirect a branded source if endpoint and expectedOrigin were changed together; objects are now frozen and transport revalidates a copied URL against immutable origin, with regression coverage.",
+      "value": "src/__tests__/base-rpc.test.ts",
+      "at": "2026-08-04T02:31:43.097Z"
+    }
+  ],
+  "endedAt": "2026-08-04T02:32:05.634Z",
+  "close": {
+    "outcome": "passed",
+    "shipped": [
+      "Strict hashed Base source registry, immutable secret-resolved endpoints, and DNS/TLS-hardened read-only JSON-RPC transport.",
+      "Unanimous shared-finalized collector with Base genesis checkpoint, EIP-1898 state binding, receipt normalization, and upgrade-aware native-USDC proxy/implementation allowlist.",
+      "Operator CLI, deterministic adversarial suite, source documentation, and a sanitized live two-provider conformance receipt."
+    ],
+    "verified": [
+      "203/203 tests, typecheck, clean build, diff check, live receipt parity, and public no-spend containment pass.",
+      "Official Base RPC and PublicNode agreed at finalized block 49509847 on genesis, canonical hash, native-USDC code identity/metadata, and the sanitized authorizationState read.",
+      "Independent threat modeling and adversarial review drove genesis pinning, EIP-1898 binding, DNS controls, immutable registry snapshots, and the resolved-source mutation fix."
+    ],
+    "unproven": [
+      "The two development endpoints are operator-declared failure domains, not provider-signed proofs or a production SLA; production should use contracted diverse providers or a self-validating node.",
+      "The v0.1 kernel does not yet verify the collection digest, and the source registry has no external signature, anti-rollback publication, or revocation service."
+    ],
+    "next": [
+      "Build the signed operator effect-authority contract/registry and authority-bound evaluator.",
+      "Create the v0.2 wrapper that verifies Base collection and effect attestations before upgrading assurance.",
+      "Bind v0.2 inputs and bundles to durable journal heads, then add the no-action shadow runner."
+    ],
+    "tests": [],
+    "git": {
+      "isRepository": true,
+      "root": "/Users/tjb/code/x402-canary",
+      "branch": "feat/base-evidence-kernel",
+      "head": "c69e3c0c28ce6cebccc24d3daec9e01791ad2bf3",
+      "status": [
+        "M CLAUDE.md",
+        " M README.md",
+        " M docs/evidence-kernel-v0.1.md",
+        " M package.json",
+        " M src/evidence/index.ts",
+        "?? .builder-workflows/active-session.json",
+        "?? docs/base-collector-v0.1.md",
+        "?? examples/base-collection-request-v0.1.json",
+        "?? examples/base-collection-v0.1.live.json",
+        "?? examples/base-source-registry-v0.1.json",
+        "?? src/__tests__/base-rpc.test.ts",
+        "?? src/base-evidence-collect-cli.ts",
+        "?? src/evidence/base-rpc.ts"
+      ],
+      "commits": [],
+      "diffStat": "CLAUDE.md                    |  9 ++++++---\n README.md                    | 20 +++++++++++++++++---\n docs/evidence-kernel-v0.1.md |  2 +-\n package.json                 |  1 +\n src/evidence/index.ts        |  1 +\n 5 files changed, 26 insertions(+), 7 deletions(-)"
+    }
+  }
+}
