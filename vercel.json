@@ -2,6 +2,9 @@
   "functions": {
     "api/base-transaction.ts": {
       "maxDuration": 10
+    },
+    "api/x402-intent.ts": {
+      "maxDuration": 10
     }
   },
   "headers": [

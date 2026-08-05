@@ -248,6 +248,19 @@ function publicResponse(
   return Object.freeze(response);
 }
 
+/**
+ * Bind and sanitize a collected observation for composition by other public,
+ * read-only evidence routes without re-running HTTP request parsing.
+ */
+export function createPublicBaseTransactionResponse(
+  observation: BaseTransactionObservationV01,
+  transactionHash: string,
+  checkedAt: string,
+): PublicBaseTransactionResponseV01 {
+  assertObservationBinding(observation, transactionHash, checkedAt);
+  return publicResponse(observation);
+}
+
 export async function verifyPublicBaseTransaction(
   request: PublicBaseTransactionHttpRequest,
   collector: PublicBaseTransactionCollector,
@@ -255,8 +268,7 @@ export async function verifyPublicBaseTransaction(
 ): Promise<PublicBaseTransactionResponseV01> {
   const transactionHash = parsePublicBaseTransactionRequest(request);
   const observation = await collector({ transactionHash, checkedAt });
-  assertObservationBinding(observation, transactionHash, checkedAt);
-  return publicResponse(observation);
+  return createPublicBaseTransactionResponse(observation, transactionHash, checkedAt);
 }
 
 export const PUBLIC_BASE_TRANSACTION_PATH = PUBLIC_ROUTE;

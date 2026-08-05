@@ -72,24 +72,24 @@ function restoreEnvironmentVariable(name: string, value: string | undefined): vo
   }
 }
 
-test("the public v0.1 release status exposes the fixed verified evidence surface", () => {
+test("the public v0.2 release status exposes the intent-aware no-action surface", () => {
   const status = createPublicEvidenceStatus({
     environment: "production",
     gitCommitSha: "ABCDEF0123456789ABCDEF0123456789ABCDEF01",
     servedAt: "2026-08-04T12:34:56.789Z",
   });
 
-  assert.equal(status.schemaVersion, "0.1");
+  assert.equal(status.schemaVersion, "0.2");
   assert.equal(status.kind, "public_evidence_release_status");
   assert.equal(status.service, "x402-canary");
-  assert.equal(status.mode, "shadow_no_action");
+  assert.equal(status.mode, "intent_aware_read_only");
   assert.equal(
     status.evidenceCoreCommit,
     "3ead8680d764ecbafe0739865f3789f8928f0fa6",
   );
   assert.deepEqual(status.verification, {
-    session: 6,
-    deterministicSuite: { passed: 283, total: 283, status: "PASS" },
+    session: 9,
+    deterministicSuite: { passed: 333, total: 333, status: "PASS" },
     independentReview: { status: "PASS" },
   });
 
@@ -98,32 +98,31 @@ test("the public v0.1 release status exposes the fixed verified evidence surface
   assert.deepEqual(
     status.evidenceLayers.items.map((layer) => layer.id),
     [
-      "authenticated_base_collection",
-      "signed_effect_authority",
-      "journal_bound_integrity",
-      "no_action_shadow_runner",
+      "strict_requirement_normalization",
+      "fixed_base_collection",
+      "exact_settlement_comparison",
+      "deterministic_report_seal",
     ],
   );
   assert.ok(status.evidenceLayers.items.every((layer) => layer.status === "verified"));
 
-  assert.equal(status.outcomeMatrix.rowCount, 9);
-  assert.equal(status.outcomeMatrix.rows.length, 9);
+  assert.equal(status.outcomeMatrix.rowCount, 6);
+  assert.equal(status.outcomeMatrix.rows.length, 6);
   assert.deepEqual(
     status.outcomeMatrix.rows.map((row) => row.id),
     [
-      "confirmed_committed",
-      "absent_absent",
-      "pending_confirmations",
-      "base_contradiction",
-      "duplicate_settlement",
-      "confirmed_effect_absent",
-      "confirmed_effect_unknown",
-      "confirmed_effect_duplicate",
-      "confirmed_effect_contradiction",
+      "settlement_terms_matched",
+      "settlement_terms_mismatch",
+      "pending_finality",
+      "not_observed",
+      "multiple_payments_observed",
+      "contradiction",
     ],
   );
 
   assert.deepEqual(status.capabilities, {
+    x402RequirementComparisonEnabled: true,
+    callerDeclaredRequirementEnabled: true,
     paymentExecutionEnabled: false,
     walletAccessEnabled: false,
     signingEnabled: false,
@@ -136,26 +135,34 @@ test("the public v0.1 release status exposes the fixed verified evidence surface
     publicOutboundMonitoringEnabled: false,
   });
   assert.deepEqual(status.liveVerifier, {
-    schemaVersion: "0.1",
-    scope: "transaction_only",
+    schemaVersion: "0.2",
+    scope: "supported_x402_v2_settlement_terms",
+    supportedX402Version: 2,
+    supportedScheme: "exact",
     networkId: "eip155:8453",
     nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    transferMethod: "eip3009",
     configuredSources: 2,
     quorum: "unanimous",
     finality: "shared_finalized_anchor",
     callerSelectedRpcEnabled: false,
+    paymentRequirementsForwardedToRpc: false,
   });
   assert.deepEqual(status.trust, {
     externalTruthProven: false,
-    operatorDatabaseTruthIndependentlyProven: false,
-    externalAntiRollbackCheckpoint: false,
-    trustedLocalWriterRequired: true,
-    historicalTransportReauthentication: false,
-    historicalSignatureReverification: false,
+    x402WireExchangeProven: false,
+    requirementAuthenticityProven: false,
+    resourceBindingProven: false,
+    authorizationWindowProven: false,
+    httpDeliveryProven: false,
+    businessEffectProven: false,
+    duplicatePurchaseProven: false,
+    retrySafetyProven: false,
   });
   assert.deepEqual(
     status.publicRoutes.map((route) => route.path),
     [
+      "/api/x402-intent",
       "/api/base-transaction",
       "/api/evidence-status",
       "/api/health",
@@ -164,15 +171,11 @@ test("the public v0.1 release status exposes the fixed verified evidence surface
     ],
   );
   assert.ok(status.publicRoutes.every((route) => route.callerSelectedTargetEnabled === false));
-  assert.equal(
-    status.publicRoutes.find((route) => route.path === "/api/base-transaction")
-      ?.outboundRequestsEnabled,
-    true,
-  );
-  assert.ok(
+  assert.deepEqual(
     status.publicRoutes
-      .filter((route) => route.path !== "/api/base-transaction")
-      .every((route) => route.outboundRequestsEnabled === false),
+      .filter((route) => route.outboundRequestsEnabled)
+      .map((route) => route.path),
+    ["/api/x402-intent", "/api/base-transaction"],
   );
   assert.deepEqual(status.deployment, {
     environment: "production",
@@ -199,7 +202,7 @@ test("release facts and generated status objects are recursively immutable", () 
   assert.throws(() => {
     (status.deployment as { environment: string }).environment = "production";
   }, TypeError);
-  assert.equal(status.mode, "shadow_no_action");
+  assert.equal(status.mode, "intent_aware_read_only");
   assert.equal(status.evidenceLayers.items.length, 4);
   assert.equal(status.deployment.environment, "local");
 });

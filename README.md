@@ -1,14 +1,15 @@
 # x402-canary
 
-Read-only Base transaction evidence for native USDC, plus a private no-action x402 evidence kernel.
+Read-only verification of supported x402 v2 settlement requirements on Base native USDC, plus a private no-action evidence kernel.
 
 ## Current safety state
 
 This branch is in live read-only verification, source-containment, and no-spend mode:
 
 - Public caller-selected outbound probes are disabled and return HTTP 410.
+- `POST /api/x402-intent` accepts one strict caller-declared x402 v2 `PaymentRequirements` object plus one Base transaction hash. It compares the supported requirement slice with fixed-source finalized native-USDC EIP-3009 evidence and returns a deterministic, machine-readable report.
 - `GET /api/base-transaction?transactionHash=0x…` accepts one canonical Base transaction hash and compares two code-pinned, server-owned Base RPC sources at a shared finalized anchor.
-- The public verifier can report public receipt and native-USDC EIP-3009 event facts. It cannot prove intended x402 terms, HTTP delivery, business effect, or retry safety.
+- The lower-level transaction route reports public receipt and native-USDC EIP-3009 event facts without evaluating an expected requirement.
 - `/api/health` reports the fixed verifier policy and makes no third-party requests itself.
 - `npm start` serves the verifier on `127.0.0.1`; scheduled endpoint checks remain disabled.
 - The source Bankr manifest advertises no paid services.
@@ -18,23 +19,36 @@ This branch is in live read-only verification, source-containment, and no-spend 
 - The separate `effect:verify` CLI performs local Ed25519 verification against an out-of-band registry hash; it exposes no network, database-write, retry, wallet, signer, transaction, or payment path.
 - Journal-bound bundle v0.2 persists branded Base/effect inputs and deterministic shadow results behind two adjacent journal commits; every execution flag remains false.
 - The `shadow:run` operator CLI composes those boundaries from a separately pinned manifest and an existing journaled attempt. It fetches only registry-pinned read-only Base RPC methods, never fetches the operation URL, and emits no retry or action directive beyond `none`.
-- The production web console at [canary.0x402.sh](https://canary.0x402.sh) accepts only a transaction hash, calls only its same-origin verifier API, and exposes no wallet, signer, transaction submission, payment, retry, or action control. Private journals, artifacts, operation data, effect IDs, and retry verdicts remain private.
+- The production web console at [canary.0x402.sh](https://canary.0x402.sh) accepts one transaction hash and one supported `PaymentRequirements` object, calls only its same-origin verifier API, and exposes no wallet, signer, transaction submission, payment, retry, or action control. Private journals, artifacts, operation data, effect IDs, and retry verdicts remain private.
 - Tests and CI make no production payment.
 
 The Vercel console and its legacy routes are a separate surface from any historical Bankr listing. A healthy console or HTTP 410 from Vercel does not prove that Bankr has paused or removed a separately hosted service.
 
 ## What is implemented
 
-The public Base verifier is a deliberately smaller claim than the private evidence kernel. For one transaction hash it:
+The public verifier is a deliberately smaller claim than the private evidence kernel. `POST /api/x402-intent` supports exactly:
+
+- x402 version `2` and scheme `exact`;
+- Base mainnet (`eip155:8453`);
+- native Base USDC at `0x833589fcd6edb6e08f4c7c32d4f71b54bda02913`;
+- the `USD Coin` / `2` token domain and EIP-3009 transfer method;
+- a positive atomic amount, a nonzero `payTo`, and a positive declared `maxTimeoutSeconds` no greater than 86,400.
+
+The endpoint fails closed on unsupported or ambiguous requirements before constructing the Base RPC runtime. For the supported slice it:
 
 - pins Base mainnet, its genesis checkpoint, native Base USDC, and exactly two server-owned HTTPS RPC origins;
 - chooses the lower provider `finalized` height and requires both sources to agree on its number, hash, and timestamp;
 - requires an identical canonical receipt from both sources and withholds finality when the receipt is above the shared anchor;
 - classifies only adjacent native-USDC `AuthorizationUsed(address,bytes32) → Transfer(address,address,uint256)` pairs;
-- returns bounded, sanitized facts with explicit limitations and an observation hash;
-- never accepts an RPC URL, method, chain, asset, recipient, amount, block tag, or finality policy from the caller.
+- compares the finalized event recipient and atomic amount with the normalized requirement;
+- returns bounded, sanitized facts, field-by-field comparisons, deterministic content hashes, and explicit limitations;
+- never accepts an RPC URL, method, block tag, finality policy, or resource URL from the caller.
 
-`confirmed` therefore means one qualifying finalized event pair was observed unanimously across the configured sources. It does not mean “x402 payment verified” and grants no execution or retry authority.
+`settlement_terms_matched` means exactly one untruncated qualifying event pair was observed under the unanimous finalized policy and its recipient and atomic amount matched the supported caller-declared requirement. The scheme is accepted by the strict input boundary; the network, asset, token domain, and EIP-3009 method are fixed by the observer. The timeout remains caller-declared only.
+
+This verdict does not prove that an x402 v2 wire exchange occurred, who issued the requirement, which resource it described, an expected payer or nonce, the authorization window or signature, timeout compliance, HTTP delivery or business effect, a duplicate purchase, or retry safety. The deterministic hashes are unsigned content identities, not signatures or attestations. See [`docs/public-x402-intent-v0.2.md`](docs/public-x402-intent-v0.2.md) for the exact request, response, verdict, privacy, and machine-client contract.
+
+The lower-level `GET /api/base-transaction` route remains available. Its `confirmed` status means one qualifying finalized event pair was observed unanimously; it does not evaluate a caller-declared x402 requirement and grants no execution or retry authority.
 
 The no-spend verifier and fixtures evaluate objective predicates rather than a trust score or payment recommendation:
 
@@ -91,7 +105,7 @@ Then start the loopback-only UI:
 npm start
 ```
 
-Open `http://127.0.0.1:3402` and submit a Base transaction hash. The lookup performs read-only requests against the fixed public registry; it does not use a wallet or submit a transaction. Public gateway availability is best-effort, so provider/configuration/deadline failures return a sanitized `503` rather than a chain verdict.
+Open `http://127.0.0.1:3402` and submit a Base transaction hash with one supported x402 v2 `PaymentRequirements` object. The transaction hash is necessarily used for fixed-source Base reads; the requirement is evaluated locally and is not forwarded to RPC providers. The lookup does not use a wallet or submit a transaction. Public gateway availability is best-effort, so provider/configuration/deadline failures return a sanitized `503` rather than a chain verdict.
 
 Recompute the sanitized Evidence Kernel example without making a network request:
 
@@ -157,14 +171,15 @@ An identical signed-request replay is safe only after the route's replay contrac
 
 ## Public routes in this branch
 
-- `GET /api/base-transaction?transactionHash=0x…` — fixed-source Base receipt/finality and native-USDC event observation; the only public route allowed to perform registry-pinned outbound reads.
+- `POST /api/x402-intent` — strict supported-requirement comparison over fixed-source Base receipt/finality and native-USDC EIP-3009 evidence; accepts no query string and returns `Cache-Control: no-store`.
+- `GET /api/base-transaction?transactionHash=0x…` — lower-level fixed-source Base receipt/finality and native-USDC event observation without an expected requirement.
 - `GET /api/evidence-status` — sanitized, read-only evidence-release and deployment metadata; zero outbound requests.
 - `GET /api/health` — verifier policy and capability status; zero outbound requests for the health request itself.
 - `GET /api/trust` — legacy route; HTTP 410; zero outbound requests.
 - `POST /api/preflight` — legacy route; HTTP 410; zero outbound requests.
 - `x402/trust` — disabled paid-handler source; HTTP 410; zero outbound requests.
 
-The browser fetches `/api/health`, `/api/evidence-status`, and `/api/base-transaction` from its own origin. The evidence status distinguishes caller-selected public transaction hashes from caller-selected network targets: the former is enabled, while RPC origins, payment, wallet, signing, transaction submission, retry, action, and scheduled monitoring remain disabled. It is public chain observation, not a live view into private operator data and not permission to execute anything.
+The browser fetches `/api/health`, `/api/evidence-status`, and `/api/x402-intent` from its own origin. The intent request travels in the POST body, is not persisted by the application, and is returned with `Cache-Control: no-store`; ordinary browser, platform, function, and provider infrastructure may still log request metadata, and the public transaction hash is used in fixed-source RPC requests. Payment requirements, RPC origins, wallet material, signatures, payment headers, and private evidence are never accepted as execution authority. Payment, wallet, signing, transaction submission, retry, action, and scheduled monitoring remain disabled.
 
 ## Not yet production-ready
 
@@ -185,6 +200,7 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 ## Repository layout
 
 - `api/`, `x402/`, `public/` — bounded public surface and read-only Base evidence console.
+- `src/evidence/x402-intent.ts`, `src/public-x402-intent.ts`, and `api/x402-intent.ts` — strict supported-requirement normalization, pure settlement-term evaluation, sanitized public report, and POST boundary.
 - `src/evidence/base-transaction.ts` and `src/public-base-transaction*.ts` — transaction-only finalized receipt/event observer and sanitized HTTP boundary.
 - `src/public-evidence-status.ts` — immutable allowlisted public release DTO; no evidence-store or action imports.
 - `src/index.ts`, `src/dashboard.ts`, `src/canary.ts` — contained loopback start path; no scheduler or generic outbound checker.
@@ -198,6 +214,7 @@ Facilitator or client metadata may be retained as a provider claim, but it canno
 - `docs/effect-authority-v0.1.md` — Ed25519 registry/policy boundary, signed outcomes, key lifecycle, and operator-adapter limits.
 - `docs/journal-bound-bundles-v0.2.md` — artifact DAG, two journal anchors, exact replay, crash recovery, local-integrity verification, and remaining anti-rollback/authority boundaries.
 - `docs/shadow-runner-v0.1.md` — manifest/pin separation, no-action orchestration, sanitized output, deterministic conformance matrix, and operator procedure.
+- `docs/public-x402-intent-v0.2.md` — exact public intent request/response, verdict semantics, containment, privacy, and honest proof limits.
 - `src/__tests__/` — deterministic containment, challenge, browser, proxy, and reconciliation fixtures.
 
 ## Deployment

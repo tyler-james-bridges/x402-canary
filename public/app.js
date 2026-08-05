@@ -1,7 +1,7 @@
 const RELEASE_CORE_SHA = "3ead8680d764ecbafe0739865f3789f8928f0fa6";
 const THEME_KEY = "x402-canary-theme";
 const STATUS_ROUTES = new Set(["/api/health", "/api/evidence-status"]);
-const BASE_TRANSACTION_ROUTE = "/api/base-transaction";
+const X402_INTENT_ROUTE = "/api/x402-intent";
 const BASE_NETWORK_ID = "eip155:8453";
 const BASE_USDC_ASSET = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 const TRANSACTION_HASH_PATTERN = /^0x[0-9a-fA-F]{64}$/;
@@ -9,15 +9,6 @@ const ADDRESS_PATTERN = /^0x[0-9a-f]{40}$/;
 const BYTES32_PATTERN = /^0x[0-9a-f]{64}$/;
 const CANONICAL_UINT_PATTERN = /^(?:0|[1-9]\d*)$/;
 const VERIFIER_TIMEOUT_MS = 20_000;
-const VERDICT_STATUSES = new Set([
-  "confirmed",
-  "multiple",
-  "pending_finality",
-  "not_observed",
-  "not_eip3009_usdc",
-  "reverted",
-  "contradiction",
-]);
 const DEPLOYMENT_ENVIRONMENTS = new Set([
   "production",
   "preview",
@@ -27,6 +18,8 @@ const DEPLOYMENT_ENVIRONMENTS = new Set([
 ]);
 
 const CAPABILITY_EXPECTATIONS = {
+  x402RequirementComparisonEnabled: true,
+  callerDeclaredRequirementEnabled: true,
   paymentExecutionEnabled: false,
   walletAccessEnabled: false,
   signingEnabled: false,
@@ -40,14 +33,26 @@ const CAPABILITY_EXPECTATIONS = {
 };
 
 const LIVE_VERIFIER_EXPECTATIONS = {
-  schemaVersion: "0.1",
-  scope: "transaction_only",
+  schemaVersion: "0.2",
+  scope: "supported_x402_v2_settlement_terms",
+  supportedX402Version: 2,
+  supportedScheme: "exact",
   networkId: BASE_NETWORK_ID,
   nativeUsdcAsset: BASE_USDC_ASSET,
+  transferMethod: "eip3009",
   configuredSources: 2,
   quorum: "unanimous",
   finality: "shared_finalized_anchor",
   callerSelectedRpcEnabled: false,
+  paymentRequirementsForwardedToRpc: false,
+};
+
+const HEALTH_INTENT_EXPECTATIONS = {
+  enabled: true,
+  schemaVersion: "0.2",
+  scope: "supported_x402_v2_settlement_terms",
+  requirementTransport: "request_body",
+  paymentRequirementsForwardedToRpc: false,
 };
 
 const HEALTH_CAPABILITY_EXPECTATIONS = {
@@ -70,118 +75,107 @@ const HEALTH_VERIFIER_EXPECTATIONS = {
 
 const TRUST_EXPECTATIONS = {
   externalTruthProven: false,
-  operatorDatabaseTruthIndependentlyProven: false,
-  externalAntiRollbackCheckpoint: false,
-  trustedLocalWriterRequired: true,
-  historicalTransportReauthentication: false,
-  historicalSignatureReverification: false,
+  x402WireExchangeProven: false,
+  requirementAuthenticityProven: false,
+  resourceBindingProven: false,
+  authorizationWindowProven: false,
+  httpDeliveryProven: false,
+  businessEffectProven: false,
+  duplicatePurchaseProven: false,
+  retrySafetyProven: false,
 };
 
 const LAYER_EXPECTATIONS = [
   {
-    id: "authenticated_base_collection",
+    id: "strict_requirement_normalization",
+    cardId: "requirement-normalizer",
+    status: "verified",
+    boundary: "caller_declared_supported_x402_v2_fields_only",
+  },
+  {
+    id: "fixed_base_collection",
     cardId: "base-collector",
     status: "verified",
     boundary: "unanimous_operator_declared_rpc_trust_domains",
   },
   {
-    id: "signed_effect_authority",
-    cardId: "effect-authority",
+    id: "exact_settlement_comparison",
+    cardId: "settlement-comparator",
     status: "verified",
-    boundary: "ed25519_out_of_band_registry",
+    boundary: "finalized_native_usdc_recipient_and_amount_only",
   },
   {
-    id: "journal_bound_integrity",
-    cardId: "journal-bundle",
+    id: "deterministic_report_seal",
+    cardId: "report-seal",
     status: "verified",
-    boundary: "content_addressed_artifacts_and_hash_linked_journal",
-  },
-  {
-    id: "no_action_shadow_runner",
-    cardId: "shadow-runner",
-    status: "verified",
-    boundary: "deterministic_shadow_only_orchestration",
+    boundary: "unsigned_content_identity_no_authenticity",
   },
 ];
 
 const BOUNDARY_LABELS = {
+  caller_declared_supported_x402_v2_fields_only:
+    "Strictly accepts one caller-declared x402 v2 exact requirement for Base native USDC and rejects unsupported fields before any RPC runtime exists.",
   unanimous_operator_declared_rpc_trust_domains:
     "Unanimous observation across operator-declared RPC trust domains. Transport identity does not prove Base consensus truth.",
-  ed25519_out_of_band_registry:
-    "Ed25519 verification against an out-of-band authority registry. A valid signature does not prove the source database truthful.",
-  content_addressed_artifacts_and_hash_linked_journal:
-    "Content-addressed artifacts and adjacent hash-linked journal commits bind the evaluator input, result, and closure receipt.",
-  deterministic_shadow_only_orchestration:
-    "Deterministic shadow-only orchestration composes the evidence layers and emits no action authority.",
+  finalized_native_usdc_recipient_and_amount_only:
+    "Compares recipient and amount only after one finalized native-USDC EIP-3009 event pair is established. Protocol and timeout metadata remain declarations.",
+  unsigned_content_identity_no_authenticity:
+    "Domain-separated hashes make case and report content reproducible. They are not signatures and do not authenticate the requirement issuer.",
 };
 
 const OUTCOME_EXPECTATIONS = [
   {
-    id: "confirmed_committed",
-    settlement: "confirmed",
-    effect: "committed",
-    terminalState: "settled_delivered",
-    invariantPassed: true,
+    id: "settlement_terms_matched",
+    baseEvidence: "confirmed",
+    requirementComparison: "matched",
+    claimMade: true,
+    actionDirective: "none",
   },
   {
-    id: "absent_absent",
-    settlement: "absent",
-    effect: "absent",
-    terminalState: "settlement_failed",
-    invariantPassed: true,
+    id: "settlement_terms_mismatch",
+    baseEvidence: "confirmed",
+    requirementComparison: "mismatched",
+    claimMade: true,
+    actionDirective: "none",
   },
   {
-    id: "pending_confirmations",
-    settlement: "pending_finality",
-    effect: "committed",
-    terminalState: "settled_pending_finality",
-    invariantPassed: true,
+    id: "pending_finality",
+    baseEvidence: "pending_finality",
+    requirementComparison: "not_evaluated",
+    claimMade: false,
+    actionDirective: "none",
   },
   {
-    id: "base_contradiction",
-    settlement: "contradiction",
-    effect: "committed",
-    terminalState: "evidence_contradiction",
-    invariantPassed: true,
+    id: "not_observed",
+    baseEvidence: "not_observed",
+    requirementComparison: "not_evaluated",
+    claimMade: false,
+    actionDirective: "none",
   },
   {
-    id: "duplicate_settlement",
-    settlement: "duplicate",
-    effect: "committed",
-    terminalState: "duplicate_settlement",
-    invariantPassed: false,
+    id: "multiple_payments_observed",
+    baseEvidence: "multiple",
+    requirementComparison: "not_evaluated",
+    claimMade: false,
+    actionDirective: "none",
   },
   {
-    id: "confirmed_effect_absent",
-    settlement: "confirmed",
-    effect: "absent",
-    terminalState: "settled_delivery_failed",
-    invariantPassed: true,
-  },
-  {
-    id: "confirmed_effect_unknown",
-    settlement: "confirmed",
-    effect: "unknown",
-    terminalState: "settled_delivery_unverified",
-    invariantPassed: true,
-  },
-  {
-    id: "confirmed_effect_duplicate",
-    settlement: "confirmed",
-    effect: "duplicate",
-    terminalState: "settled_delivery_failed",
-    invariantPassed: false,
-  },
-  {
-    id: "confirmed_effect_contradiction",
-    settlement: "confirmed",
-    effect: "contradiction",
-    terminalState: "evidence_contradiction",
-    invariantPassed: true,
+    id: "contradiction",
+    baseEvidence: "contradiction",
+    requirementComparison: "not_evaluated",
+    claimMade: false,
+    actionDirective: "none",
   },
 ];
 
 const ROUTE_EXPECTATIONS = [
+  {
+    path: "/api/x402-intent",
+    methods: ["POST"],
+    disposition: "x402_requirement_verification",
+    callerSelectedTargetEnabled: false,
+    outboundRequestsEnabled: true,
+  },
   {
     path: "/api/base-transaction",
     methods: ["GET"],
@@ -312,6 +306,7 @@ function validateHealth(value) {
       "service",
       "status",
       "mode",
+      "intentAwareRequirementVerification",
       "fixedSourceBaseVerification",
       "legacyProbeRoutes",
       "scheduledMonitoringEnabled",
@@ -319,10 +314,14 @@ function validateHealth(value) {
       "requestOutboundReadsMade",
       "capabilities",
     ]) &&
-    value.schemaVersion === "0.1" &&
+    value.schemaVersion === "0.2" &&
     value.service === "x402-canary" &&
     value.status === "operational_read_only" &&
-    value.mode === "live_base_transaction_verification" &&
+    value.mode === "live_x402_requirement_verification" &&
+    matchesExactRecord(
+      value.intentAwareRequirementVerification,
+      HEALTH_INTENT_EXPECTATIONS,
+    ) &&
     matchesExactRecord(value.fixedSourceBaseVerification, HEALTH_VERIFIER_EXPECTATIONS) &&
     value.legacyProbeRoutes === "disabled" &&
     value.scheduledMonitoringEnabled === false &&
@@ -364,12 +363,12 @@ function validateVerification(value) {
     return false;
   }
   return (
-    value.session === 6 &&
-    matchesExactRecord(value.deterministicSuite, {
-      passed: 283,
-      total: 283,
-      status: "PASS",
-    }) &&
+    value.session === 9 &&
+    hasExactKeys(value.deterministicSuite, ["passed", "total", "status"]) &&
+    Number.isSafeInteger(value.deterministicSuite.passed) &&
+    value.deterministicSuite.passed > 0 &&
+    value.deterministicSuite.passed === value.deterministicSuite.total &&
+    value.deterministicSuite.status === "PASS" &&
     matchesExactRecord(value.independentReview, { status: "PASS" })
   );
 }
@@ -462,10 +461,10 @@ function validateEvidenceStatus(value) {
   }
 
   return (
-    value.schemaVersion === "0.1" &&
+    value.schemaVersion === "0.2" &&
     value.kind === "public_evidence_release_status" &&
     value.service === "x402-canary" &&
-    value.mode === "shadow_no_action" &&
+    value.mode === "intent_aware_read_only" &&
     value.evidenceCoreCommit === RELEASE_CORE_SHA &&
     validateVerification(value.verification) &&
     validateLayers(value.evidenceLayers) &&
@@ -507,25 +506,27 @@ function renderOutcomes(rows) {
       row.querySelector("[data-field='case']"),
       `${String(index + 1).padStart(2, "0")} · ${outcome.id}`,
     );
-    setCellText(row.querySelector("[data-field='base']"), outcome.settlement);
-    setCellText(row.querySelector("[data-field='effect']"), outcome.effect);
-    setCellText(row.querySelector("[data-field='terminalState']"), outcome.terminalState);
-
-    const invariantCell = row.querySelector("[data-field='invariant']");
-    setCellText(invariantCell, outcome.invariantPassed ? "pass" : "fail");
-    const invariant = invariantCell ? invariantCell.firstElementChild : null;
-    if (invariant) {
-      invariant.classList.toggle("pass", outcome.invariantPassed);
-      invariant.classList.toggle("block", !outcome.invariantPassed);
+    setCellText(row.querySelector("[data-field='base']"), outcome.baseEvidence);
+    setCellText(
+      row.querySelector("[data-field='comparison']"),
+      outcome.requirementComparison,
+    );
+    const claimCell = row.querySelector("[data-field='claim']");
+    setCellText(claimCell, outcome.claimMade ? "yes" : "no");
+    const claim = claimCell ? claimCell.firstElementChild : null;
+    if (claim) {
+      claim.classList.toggle("pass", outcome.claimMade);
+      claim.classList.toggle("block", !outcome.claimMade);
     }
+    setCellText(row.querySelector("[data-field='action']"), outcome.actionDirective);
   });
 }
 
 function renderTrust(trust) {
   setText("external-truth-value", trust.externalTruthProven);
-  setText("database-truth-value", trust.operatorDatabaseTruthIndependentlyProven);
-  setText("anti-rollback-value", trust.externalAntiRollbackCheckpoint);
-  setText("writer-trust-value", trust.trustedLocalWriterRequired ? "required" : "not required");
+  setText("requirement-authenticity-value", trust.requirementAuthenticityProven);
+  setText("resource-binding-value", trust.resourceBindingProven);
+  setText("delivery-value", trust.httpDeliveryProven);
 }
 
 function renderEvidence(value) {
@@ -557,7 +558,7 @@ function renderEvidence(value) {
 
   setText(
     "matrix-note",
-    "The live release matches the checked-in nine-case matrix. Each row keeps settlement, effect, terminal state, and invariant separate.",
+    "The live release matches the checked-in six-verdict matrix. Only one finalized payment can produce a settlement-terms match or mismatch claim.",
   );
   return true;
 }
@@ -574,7 +575,7 @@ function renderEvidenceFailure(connectionState = "unavailable") {
   setState("deployment-card", "unverified");
   setText(
     "matrix-note",
-    "The static checked-in nine-case matrix is shown below; live release metadata is unavailable or did not match the exact public schema.",
+    "The static checked-in six-verdict matrix is shown below; live release metadata is unavailable or did not match the exact public schema.",
   );
 }
 
@@ -625,11 +626,14 @@ async function loadStatus() {
   finishStatus(healthVerified, evidenceVerified);
 }
 
-const PUBLIC_VERIFIER_CAPABILITIES = {
+const PUBLIC_INTENT_CAPABILITIES = {
+  x402RequirementComparisonEnabled: true,
   fixedSourceBaseVerificationEnabled: true,
+  callerDeclaredRequirementEnabled: true,
   callerSelectedTransactionHashEnabled: true,
   callerSelectedTargetEnabled: false,
   callerSelectedRpcEnabled: false,
+  callerDeclaredResourceUrlEnabled: false,
   paymentExecutionEnabled: false,
   walletAccessEnabled: false,
   signingEnabled: false,
@@ -638,70 +642,169 @@ const PUBLIC_VERIFIER_CAPABILITIES = {
   actionExecutionEnabled: false,
 };
 
-const PUBLIC_VERIFIER_ASSURANCE = {
-  scope: "fixed_source_base_receipt_and_native_usdc_eip3009_events",
+const PUBLIC_INTENT_ASSURANCE = {
+  scope: "supported_x402_v2_settlement_terms",
+  requirementSource: "caller_declared",
   sourceIdentity: "server_pinned_origins",
   finality: "shared_finalized_block_hash",
   quorum: "unanimous",
+  reportIntegrity: "unsigned_sha256_content_identity",
   externalTruthProven: false,
 };
 
-const PUBLIC_VERIFIER_PRIVACY = {
-  transactionHashTransport: "public_url_query",
-  transactionHashMayAppearInPlatformLogs: true,
+const PUBLIC_INTENT_PRIVACY = {
+  transactionHashTransport: "request_body",
+  requirementTransport: "request_body",
+  paymentRequirementsForwardedToRpc: false,
   applicationPersistenceEnabled: false,
 };
 
-const PUBLIC_VERIFIER_LIMITATIONS = {
-  intendedX402TermsProven: false,
+const PUBLIC_INTENT_LIMITATIONS = {
+  x402WireExchangeProven: false,
+  requirementAuthenticityProven: false,
+  resourceBindingProven: false,
+  expectedPayerProven: false,
+  expectedNonceProven: false,
+  authorizationWindowProven: false,
+  timeoutComplianceProven: false,
+  authorizationSignatureProven: false,
   httpDeliveryProven: false,
   businessEffectProven: false,
+  duplicatePurchaseProven: false,
   retrySafetyProven: false,
 };
 
+const CASE_STATUSES = new Set([
+  "settlement_terms_matched",
+  "settlement_terms_mismatch",
+  "pending_finality",
+  "not_observed",
+  "multiple_payments_observed",
+  "contradiction",
+]);
+
+const BASE_OBSERVATION_STATUSES = new Set([
+  "confirmed",
+  "multiple",
+  "pending_finality",
+  "not_observed",
+  "not_eip3009_usdc",
+  "reverted",
+  "contradiction",
+]);
+
+const COMPARISON_FIELDS = [
+  "scheme",
+  "network",
+  "asset",
+  "transferMethod",
+  "tokenDomain",
+  "recipient",
+  "amount",
+  "maxTimeoutSeconds",
+];
+
+const COMPARISON_LABELS = {
+  scheme: "Scheme",
+  network: "Network",
+  asset: "Asset",
+  transferMethod: "Transfer method",
+  tokenDomain: "Token domain",
+  recipient: "Recipient",
+  amount: "Amount",
+  maxTimeoutSeconds: "Timeout",
+};
+
+const COMPARISON_STATUSES = new Set([
+  "matched",
+  "mismatched",
+  "declared_only",
+  "not_evaluated",
+]);
+
+const COMPARISON_BASES = new Set([
+  "supported_requirement",
+  "fixed_source_base_observation",
+  "native_usdc_identity",
+  "eip3009_event_pair",
+  "caller_declaration",
+]);
+
 const VERDICT_COPY = {
-  confirmed: {
-    chip: "confirmed",
-    title: "Finalized USDC event pair observed",
+  settlement_terms_matched: {
+    chip: "terms match",
+    title: "Settlement terms matched",
+    summary: "The finalized native-USDC EIP-3009 payment has the exact recipient and amount declared by this supported x402 v2 requirement.",
   },
-  multiple: {
-    chip: "multiple pairs",
-    title: "Multiple USDC event pairs observed",
+  settlement_terms_mismatch: {
+    chip: "mismatch",
+    title: "Settlement terms did not match",
+    summary: "A finalized native-USDC EIP-3009 payment was observed, but its recipient or amount differs from the declared requirement.",
   },
   pending_finality: {
     chip: "finality pending",
-    title: "Observed, finality pending",
+    title: "No final match yet",
+    summary: "The transaction was observed, but the configured sources have not placed it behind their shared finalized anchor.",
   },
   not_observed: {
-    chip: "not observed",
-    title: "Transaction not observed",
+    chip: "not established",
+    title: "Payment was not established",
+    summary: "The fixed observation did not establish one finalized native-USDC EIP-3009 payment for comparison.",
   },
-  not_eip3009_usdc: {
-    chip: "not EIP-3009",
-    title: "No qualifying USDC event pair",
-  },
-  reverted: {
-    chip: "reverted",
-    title: "Transaction reverted",
+  multiple_payments_observed: {
+    chip: "multiple payments",
+    title: "Multiple payments were observed",
+    summary: "The transaction contains multiple qualifying native-USDC EIP-3009 payment pairs, so Canary does not select one as the declared intent.",
   },
   contradiction: {
-    chip: "evidence contradiction",
-    title: "Observation contradicted policy",
+    chip: "contradiction",
+    title: "Evidence could not support a claim",
+    summary: "The configured observations did not satisfy the canonical verification policy. No settlement-terms claim was made.",
   },
 };
 
+const LIVE_EXAMPLE = {
+  transactionHash: "0x0246829b14840ccd32eeb31476ea04f54a7c8d034ca4336d9b08f18a90b26ea7",
+  paymentRequirements: {
+    scheme: "exact",
+    network: "eip155:8453",
+    amount: "19483",
+    asset: BASE_USDC_ASSET,
+    payTo: "0xe9030014f5dae217d0a152f02a043567b16c1abf",
+    maxTimeoutSeconds: 300,
+    extra: {
+      assetTransferMethod: "eip3009",
+      name: "USD Coin",
+      version: "2",
+    },
+  },
+};
+
+const UINT256_MAX = (1n << 256n) - 1n;
+const ZERO_ADDRESS = `0x${"0".repeat(40)}`;
+
 class VerifierRequestError extends Error {
-  constructor(code, retryAfterSeconds = null) {
+  constructor(code, detail = null, retryAfterSeconds = null) {
     super(code);
     this.name = "VerifierRequestError";
     this.code = code;
+    this.detail = detail;
     this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+class IntentInputError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = "IntentInputError";
+    this.code = code;
   }
 }
 
 let verifierRequestSequence = 0;
 let activeVerifierController = null;
-let lastTransactionHash = null;
+let lastCaseRequest = null;
+let lastReport = null;
 
 function isCanonicalTimestamp(value) {
   if (typeof value !== "string") return false;
@@ -721,6 +824,112 @@ function isSafeUnsignedInteger(value) {
 
 function isSha256(value) {
   return typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value);
+}
+
+function canonicalTransactionHash(value) {
+  return TRANSACTION_HASH_PATTERN.test(value) ? value.toLowerCase() : null;
+}
+
+function exactStringKeys(value, keys) {
+  return hasExactKeys(value, keys) && Object.values(value).every((item) => typeof item === "string");
+}
+
+function normalizePaymentRequirements(value) {
+  if (
+    !hasExactKeys(value, [
+      "scheme",
+      "network",
+      "amount",
+      "asset",
+      "payTo",
+      "maxTimeoutSeconds",
+      "extra",
+    ])
+  ) {
+    throw new IntentInputError("FIELDS", "Use exactly the seven x402 v2 PaymentRequirements fields shown in the example.");
+  }
+  if (value.scheme !== "exact") {
+    throw new IntentInputError("SCHEME", "This release supports the x402 exact scheme only.");
+  }
+  if (value.network !== BASE_NETWORK_ID) {
+    throw new IntentInputError("NETWORK", "This release verifies Base mainnet requirements only (eip155:8453).");
+  }
+  if (typeof value.asset !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(value.asset)) {
+    throw new IntentInputError("ASSET", "Asset must be a 20-byte EVM token address.");
+  }
+  const asset = value.asset.toLowerCase();
+  if (asset !== BASE_USDC_ASSET) {
+    throw new IntentInputError("ASSET", "This release verifies native Base USDC only.");
+  }
+  if (typeof value.payTo !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(value.payTo)) {
+    throw new IntentInputError("RECIPIENT", "payTo must be a nonzero 20-byte EVM address.");
+  }
+  const payTo = value.payTo.toLowerCase();
+  if (payTo === ZERO_ADDRESS) {
+    throw new IntentInputError("RECIPIENT", "payTo must not be the zero address.");
+  }
+  if (!isCanonicalUint(value.amount, false)) {
+    throw new IntentInputError("AMOUNT", "amount must be a positive canonical decimal string in USDC atomic units.");
+  }
+  const amount = BigInt(value.amount);
+  if (amount > UINT256_MAX) {
+    throw new IntentInputError("AMOUNT", "amount exceeds the uint256 range.");
+  }
+  if (
+    !Number.isSafeInteger(value.maxTimeoutSeconds) ||
+    value.maxTimeoutSeconds <= 0 ||
+    value.maxTimeoutSeconds > 86_400
+  ) {
+    throw new IntentInputError("TIMEOUT", "maxTimeoutSeconds must be a positive integer no greater than 86400.");
+  }
+  if (!isRecord(value.extra)) {
+    throw new IntentInputError("EXTRA", "extra must declare the native USDC EIP-712 domain.");
+  }
+  const extraKeys = Object.keys(value.extra).sort();
+  const validExtraKeys =
+    matchesStringArray(extraKeys, ["name", "version"]) ||
+    matchesStringArray(extraKeys, ["assetTransferMethod", "name", "version"]);
+  if (!validExtraKeys) {
+    throw new IntentInputError("EXTRA", "extra may contain only assetTransferMethod, name, and version.");
+  }
+  if (
+    value.extra.assetTransferMethod !== undefined &&
+    value.extra.assetTransferMethod !== "eip3009"
+  ) {
+    throw new IntentInputError("METHOD", "This release supports the EIP-3009 transfer method only.");
+  }
+  if (value.extra.name !== "USD Coin" || value.extra.version !== "2") {
+    throw new IntentInputError("DOMAIN", "Native Base USDC requires the USD Coin / 2 EIP-712 domain.");
+  }
+  return {
+    scheme: "exact",
+    network: BASE_NETWORK_ID,
+    amount: value.amount,
+    asset,
+    payTo,
+    maxTimeoutSeconds: value.maxTimeoutSeconds,
+    extra: {
+      assetTransferMethod: "eip3009",
+      name: "USD Coin",
+      version: "2",
+    },
+  };
+}
+
+function parsePaymentRequirementsInput(source) {
+  if (typeof source !== "string" || source.trim().length === 0) {
+    throw new IntentInputError("EMPTY", "Paste one PaymentRequirements JSON object.");
+  }
+  if (source.length > 4096) {
+    throw new IntentInputError("SIZE", "PaymentRequirements JSON must be 4 KB or smaller.");
+  }
+  let value;
+  try {
+    value = JSON.parse(source);
+  } catch {
+    throw new IntentInputError("JSON", "PaymentRequirements must be valid JSON.");
+  }
+  return normalizePaymentRequirements(value);
 }
 
 function validateReceipt(value, transactionHash) {
@@ -749,7 +958,7 @@ function validateSourceAgreement(value) {
     hasExactKeys(value, ["configured", "agreeing", "quorum"]) &&
     value.configured === 2 &&
     isSafeUnsignedInteger(value.agreeing) &&
-    value.agreeing <= value.configured &&
+    value.agreeing <= 2 &&
     value.quorum === "unanimous"
   );
 }
@@ -775,102 +984,125 @@ function validateSettlement(value) {
 }
 
 function validateReasons(value) {
-  if (!Array.isArray(value)) return false;
-  if (!value.every((reason) => typeof reason === "string" && /^[A-Z][A-Z0-9_]*$/.test(reason))) {
-    return false;
-  }
-  return value.every((reason, index) => index === 0 || value[index - 1] < reason);
+  return (
+    Array.isArray(value) &&
+    value.every((reason) => typeof reason === "string" && /^[A-Z][A-Z0-9_]*$/.test(reason)) &&
+    value.every((reason, index) => index === 0 || value[index - 1] < reason)
+  );
 }
 
-function validatePublicBaseTransaction(value, expectedTransactionHash) {
-  if (
-    !hasExactKeys(value, [
-      "schemaVersion",
-      "kind",
-      "checkedAt",
-      "networkId",
-      "transactionHash",
+function validateRequirement(value, expected) {
+  try {
+    const normalized = normalizePaymentRequirements(value);
+    return JSON.stringify(normalized) === JSON.stringify(expected);
+  } catch {
+    return false;
+  }
+}
+
+function validateComparison(value, field) {
+  return (
+    hasExactKeys(value, ["field", "expected", "observed", "status", "basis"]) &&
+    value.field === field &&
+    typeof value.expected === "string" &&
+    (value.observed === null || typeof value.observed === "string") &&
+    COMPARISON_STATUSES.has(value.status) &&
+    COMPARISON_BASES.has(value.basis)
+  );
+}
+
+function validateBaseEvidence(value, transactionHash) {
+  return (
+    hasExactKeys(value, [
       "status",
+      "observationHash",
       "receipt",
       "finalizedAnchor",
       "sourceAgreement",
       "confirmations",
       "settlementCount",
-      "settlements",
       "truncated",
+    ]) &&
+    BASE_OBSERVATION_STATUSES.has(value.status) &&
+    isSha256(value.observationHash) &&
+    validateReceipt(value.receipt, transactionHash) &&
+    validateFinalizedAnchor(value.finalizedAnchor) &&
+    validateSourceAgreement(value.sourceAgreement) &&
+    isSafeUnsignedInteger(value.confirmations) &&
+    isSafeUnsignedInteger(value.settlementCount) &&
+    typeof value.truncated === "boolean"
+  );
+}
+
+function validatePublicIntentReport(value, request) {
+  if (
+    !hasExactKeys(value, [
+      "schemaVersion",
+      "kind",
+      "checkedAt",
+      "status",
+      "transactionHash",
+      "caseId",
+      "reportHash",
+      "intent",
+      "comparisons",
+      "observedPayment",
+      "baseEvidence",
       "reasons",
-      "observationHash",
       "assurance",
       "capabilities",
       "privacy",
       "limitations",
-    ])
-  ) {
-    return false;
-  }
-
-  if (
-    value.schemaVersion !== "0.1" ||
-    value.kind !== "public_base_transaction_verification" ||
-    value.networkId !== BASE_NETWORK_ID ||
-    value.transactionHash !== expectedTransactionHash ||
+    ]) ||
+    value.schemaVersion !== "0.2" ||
+    value.kind !== "public_x402_requirement_verification" ||
     !isCanonicalTimestamp(value.checkedAt) ||
-    !VERDICT_STATUSES.has(value.status) ||
-    !validateReceipt(value.receipt, expectedTransactionHash) ||
-    !validateFinalizedAnchor(value.finalizedAnchor) ||
-    !validateSourceAgreement(value.sourceAgreement) ||
-    !isSafeUnsignedInteger(value.confirmations) ||
-    !isSafeUnsignedInteger(value.settlementCount) ||
-    !Array.isArray(value.settlements) ||
-    value.settlements.length > 32 ||
-    !value.settlements.every(validateSettlement) ||
-    typeof value.truncated !== "boolean" ||
+    !CASE_STATUSES.has(value.status) ||
+    value.transactionHash !== request.transactionHash ||
+    !isSha256(value.caseId) ||
+    !isSha256(value.reportHash) ||
+    !hasExactKeys(value.intent, ["x402Version", "paymentRequirements", "intentHash"]) ||
+    value.intent.x402Version !== 2 ||
+    !validateRequirement(value.intent.paymentRequirements, request.paymentRequirements) ||
+    !isSha256(value.intent.intentHash) ||
+    !Array.isArray(value.comparisons) ||
+    value.comparisons.length !== COMPARISON_FIELDS.length ||
+    !value.comparisons.every((item, index) => validateComparison(item, COMPARISON_FIELDS[index])) ||
+    !(value.observedPayment === null || validateSettlement(value.observedPayment)) ||
+    !validateBaseEvidence(value.baseEvidence, request.transactionHash) ||
     !validateReasons(value.reasons) ||
-    !isSha256(value.observationHash) ||
-    !matchesExactRecord(value.assurance, PUBLIC_VERIFIER_ASSURANCE) ||
-    !matchesExactRecord(value.capabilities, PUBLIC_VERIFIER_CAPABILITIES) ||
-    !matchesExactRecord(value.privacy, PUBLIC_VERIFIER_PRIVACY) ||
-    !matchesExactRecord(value.limitations, PUBLIC_VERIFIER_LIMITATIONS)
+    !matchesExactRecord(value.assurance, PUBLIC_INTENT_ASSURANCE) ||
+    !matchesExactRecord(value.capabilities, PUBLIC_INTENT_CAPABILITIES) ||
+    !matchesExactRecord(value.privacy, PUBLIC_INTENT_PRIVACY) ||
+    !matchesExactRecord(value.limitations, PUBLIC_INTENT_LIMITATIONS)
   ) {
     return false;
   }
 
-  const countMatches = value.truncated
-    ? value.settlements.length === 32 && value.settlementCount > value.settlements.length
-    : value.settlementCount === value.settlements.length;
-  if (!countMatches) return false;
-
-  if (value.status === "confirmed") {
+  const isFinalTermsResult =
+    value.status === "settlement_terms_matched" ||
+    value.status === "settlement_terms_mismatch";
+  if (isFinalTermsResult) {
     return (
-      value.receipt?.status === "success" &&
-      value.finalizedAnchor !== null &&
-      value.sourceAgreement.agreeing === 2 &&
-      value.settlementCount === 1 &&
-      value.truncated === false
+      value.baseEvidence.status === "confirmed" &&
+      value.baseEvidence.receipt?.status === "success" &&
+      value.baseEvidence.finalizedAnchor !== null &&
+      value.baseEvidence.sourceAgreement.agreeing === 2 &&
+      value.baseEvidence.settlementCount === 1 &&
+      value.baseEvidence.truncated === false &&
+      value.observedPayment !== null
     );
   }
-  if (value.status === "multiple") {
-    return (
-      value.receipt?.status === "success" &&
-      value.finalizedAnchor !== null &&
-      value.sourceAgreement.agreeing === 2 &&
-      value.settlementCount > 1
-    );
+  if (value.status === "multiple_payments_observed") {
+    return value.baseEvidence.status === "multiple" && value.observedPayment === null;
   }
-  if (value.status === "not_observed") {
-    return value.receipt === null && value.settlementCount === 0;
+  if (value.status === "pending_finality") {
+    return value.baseEvidence.status === "pending_finality" && value.observedPayment === null;
   }
-  if (value.status === "not_eip3009_usdc") {
-    return value.receipt?.status === "success" && value.settlementCount === 0;
+  if (value.status === "contradiction") {
+    return value.observedPayment === null;
   }
-  if (value.status === "reverted") {
-    return value.receipt?.status === "reverted" && value.settlementCount === 0;
-  }
-  return true;
-}
-
-function canonicalTransactionHash(value) {
-  return TRANSACTION_HASH_PATTERN.test(value) ? value.toLowerCase() : null;
+  return value.observedPayment === null;
 }
 
 function setVerifierSections(visibleId) {
@@ -890,15 +1122,19 @@ function setVerdictChip(verdict, label) {
 function setFormLoading(loading) {
   const form = element("verify-form");
   const input = element("transaction-hash");
+  const textarea = element("payment-requirements");
   const button = element("verify-button");
+  const sample = element("load-example");
   const label = button?.querySelector(".button-label");
   if (form) form.dataset.state = loading ? "loading" : "ready";
   if (input) input.disabled = loading;
+  if (textarea) textarea.disabled = loading;
+  if (sample) sample.disabled = loading;
   if (button) {
     button.disabled = loading;
     button.setAttribute("aria-busy", loading ? "true" : "false");
   }
-  if (label) label.textContent = loading ? "Verifying…" : "Verify transaction";
+  if (label) label.textContent = loading ? "Verifying…" : "Verify settlement terms";
 }
 
 function announceVerification(message) {
@@ -906,25 +1142,46 @@ function announceVerification(message) {
   window.setTimeout(() => setText("verification-announcement", message), 0);
 }
 
-function clearInputError() {
-  const input = element("transaction-hash");
-  const error = element("transaction-hash-error");
-  if (input) input.setAttribute("aria-invalid", "false");
+function clearFieldError(fieldId, errorId) {
+  const field = element(fieldId);
+  const error = element(errorId);
+  field?.setAttribute("aria-invalid", "false");
   if (error) {
     error.textContent = "";
     error.hidden = true;
   }
 }
 
-function showInputError(message) {
-  const input = element("transaction-hash");
-  const error = element("transaction-hash-error");
-  if (input) input.setAttribute("aria-invalid", "true");
+function showFieldError(fieldId, errorId, message) {
+  const field = element(fieldId);
+  const error = element(errorId);
+  field?.setAttribute("aria-invalid", "true");
   if (error) {
     error.textContent = message;
     error.hidden = false;
   }
-  input?.focus();
+  field?.focus();
+}
+
+function clearAllInputErrors() {
+  clearFieldError("transaction-hash", "transaction-hash-error");
+  clearFieldError("payment-requirements", "payment-requirements-error");
+}
+
+function updateIntentPreview() {
+  const source = element("payment-requirements")?.value ?? "";
+  const preview = element("intent-preview");
+  if (!preview) return;
+  try {
+    const requirement = parsePaymentRequirementsInput(source);
+    setText(
+      "intent-preview-summary",
+      `${formatUsdc(requirement.amount)} → ${requirement.payTo}`,
+    );
+    preview.hidden = false;
+  } catch {
+    preview.hidden = true;
+  }
 }
 
 function showVerifierIdle() {
@@ -948,29 +1205,7 @@ function showVerifierLoading() {
     panel.setAttribute("aria-labelledby", "loading-title");
   }
   setFormLoading(true);
-  announceVerification("Checking the Base transaction across the configured read-only sources.");
-}
-
-function summaryForVerdict(value) {
-  const agreement = `${value.sourceAgreement.agreeing} of ${value.sourceAgreement.configured} configured Base sources`;
-  switch (value.status) {
-    case "confirmed":
-      return `${agreement} agree at a shared finalized anchor. Exactly one adjacent native-USDC AuthorizationUsed to Transfer event pair was observed.`;
-    case "multiple":
-      return `${agreement} agree at a shared finalized anchor, but ${value.settlementCount} qualifying native-USDC event pairs were observed. No intended payment is inferred.`;
-    case "pending_finality":
-      return "The receipt was observed, but it is not yet at the shared finalized anchor. Recheck after Base finality advances.";
-    case "not_observed":
-      return "No configured source returned a receipt at this observation snapshot. The transaction may be pending or unmined; this is not proof of absence.";
-    case "not_eip3009_usdc":
-      return "The receipt was observed, but it contains no qualifying adjacent native-USDC EIP-3009 event pair.";
-    case "reverted":
-      return "Configured sources observed a reverted receipt. No native-USDC EIP-3009 event pair is claimed.";
-    case "contradiction":
-      return "Configured observations did not satisfy the fixed canonical verification policy. Canary makes no transaction claim.";
-    default:
-      return "No transaction claim was made.";
-  }
+  announceVerification("Comparing the declared x402 requirement with fixed-source Base evidence.");
 }
 
 function formatUsdc(valueAtomic) {
@@ -980,12 +1215,51 @@ function formatUsdc(valueAtomic) {
   return `${whole.toString()}.${fraction} USDC`;
 }
 
-function displayAddress(value) {
-  const zero = `0x${"0".repeat(40)}`;
-  return value === zero ? `${value} · zero address` : value;
+function formatComparisonValue(field, value) {
+  if (value === null) return "not evaluated";
+  if (field === "amount") return `${value} atomic · ${formatUsdc(value)}`;
+  if (field === "maxTimeoutSeconds") return `${value} seconds`;
+  return value;
 }
 
-function addSettlementFact(list, label, value) {
+function comparisonCard(item) {
+  const card = document.createElement("article");
+  card.className = "comparison-card";
+  card.dataset.status = item.status;
+
+  const header = document.createElement("div");
+  header.className = "comparison-card-head";
+  const label = document.createElement("strong");
+  label.textContent = COMPARISON_LABELS[item.field];
+  const status = document.createElement("span");
+  status.textContent = item.status.replace("_", " ");
+  header.append(label, status);
+
+  const values = document.createElement("dl");
+  const expected = document.createElement("div");
+  const expectedTerm = document.createElement("dt");
+  const expectedValue = document.createElement("dd");
+  expectedTerm.textContent = "Expected";
+  expectedValue.textContent = formatComparisonValue(item.field, item.expected);
+  expected.append(expectedTerm, expectedValue);
+  const observed = document.createElement("div");
+  const observedTerm = document.createElement("dt");
+  const observedValue = document.createElement("dd");
+  observedTerm.textContent = "Observed";
+  observedValue.textContent = formatComparisonValue(item.field, item.observed);
+  observed.append(observedTerm, observedValue);
+  values.append(expected, observed);
+  card.append(header, values);
+  return card;
+}
+
+function renderComparisons(comparisons) {
+  const list = element("comparison-list");
+  if (!list) return;
+  list.replaceChildren(...comparisons.map(comparisonCard));
+}
+
+function addObservedFact(list, label, value) {
   const row = document.createElement("div");
   const term = document.createElement("dt");
   const detail = document.createElement("dd");
@@ -995,75 +1269,56 @@ function addSettlementFact(list, label, value) {
   list.append(row);
 }
 
-function settlementCard(settlement, index) {
-  const card = document.createElement("article");
-  card.className = "settlement-card";
-
-  const heading = document.createElement("div");
-  heading.className = "settlement-card-head";
-  const label = document.createElement("strong");
-  const amount = document.createElement("span");
-  label.textContent = `Pair ${String(index + 1).padStart(2, "0")}`;
-  amount.textContent = formatUsdc(settlement.valueAtomic);
-  heading.append(label, amount);
-
-  const facts = document.createElement("dl");
-  addSettlementFact(facts, "From", displayAddress(settlement.from));
-  addSettlementFact(facts, "To", displayAddress(settlement.to));
-  addSettlementFact(facts, "Atomic", settlement.valueAtomic);
-  addSettlementFact(facts, "Nonce", settlement.nonce);
-  addSettlementFact(
-    facts,
-    "Logs",
-    `${settlement.authorizationUsedLogIndex} → ${settlement.transferLogIndex}`,
-  );
-  card.append(heading, facts);
-  return card;
-}
-
-function renderSettlements(value) {
+function renderObservedPayment(payment) {
   const section = element("settlement-section");
-  const list = element("settlement-list");
-  const truncation = element("truncation-note");
-  if (!section || !list || !truncation) return;
+  const list = element("observed-payment");
+  if (!section || !list) return;
   list.replaceChildren();
-  section.hidden = value.settlements.length === 0;
-  setText(
-    "settlement-count",
-    `${value.settlementCount} ${value.settlementCount === 1 ? "pair" : "pairs"}`,
+  section.hidden = payment === null;
+  if (payment === null) return;
+  addObservedFact(list, "Payer · observed only", payment.from);
+  addObservedFact(list, "Recipient", payment.to);
+  addObservedFact(list, "Amount", `${payment.valueAtomic} atomic · ${formatUsdc(payment.valueAtomic)}`);
+  addObservedFact(list, "Nonce · observed only", payment.nonce);
+  addObservedFact(
+    list,
+    "Event indexes",
+    `${payment.authorizationUsedLogIndex} → ${payment.transferLogIndex}`,
   );
-  for (const [index, settlement] of value.settlements.entries()) {
-    list.append(settlementCard(settlement, index));
-  }
-  truncation.hidden = !value.truncated;
 }
 
 function renderVerifierResult(value) {
   const copy = VERDICT_COPY[value.status];
+  const base = value.baseEvidence;
+  lastReport = value;
   setVerifierSections("verifier-result");
   setState("verifier-panel", value.status);
   setVerdictChip(value.status, copy.chip);
   setText("result-title", copy.title);
-  setText("result-summary", summaryForVerdict(value));
+  setText("result-summary", copy.summary);
+  setText("result-case-id", value.caseId);
+  setText("result-report-hash", value.reportHash);
   setText("result-transaction-hash", value.transactionHash);
   setText("result-checked-at", value.checkedAt);
   setText(
     "result-receipt",
-    value.receipt === null
-      ? "not observed"
-      : `${value.receipt.status} · block ${value.receipt.blockNumber} · ${value.confirmations} confirmations · ${value.receipt.blockHash}`,
+    base.receipt === null
+      ? "not established"
+      : `${base.receipt.status} · block ${base.receipt.blockNumber} · ${base.confirmations} confirmations · ${base.receipt.blockHash}`,
   );
   setText(
     "result-anchor",
-    value.finalizedAnchor === null
+    base.finalizedAnchor === null
       ? "not established"
-      : `block ${value.finalizedAnchor.blockNumber} · ${value.finalizedAnchor.blockHash}`,
+      : `block ${base.finalizedAnchor.blockNumber} · ${base.finalizedAnchor.blockHash}`,
   );
   setText(
     "result-sources",
-    `${value.sourceAgreement.agreeing} / ${value.sourceAgreement.configured} · unanimous policy`,
+    `${base.sourceAgreement.agreeing} / ${base.sourceAgreement.configured} · unanimous policy`,
   );
-  renderSettlements(value);
+  setText("result-kicker", `Settlement requirement report · ${value.reasons.join(" · ")}`);
+  renderComparisons(value.comparisons);
+  renderObservedPayment(value.observedPayment);
 
   const panel = element("verifier-panel");
   if (panel) {
@@ -1071,7 +1326,7 @@ function renderVerifierResult(value) {
     panel.setAttribute("aria-labelledby", "result-title");
   }
   setFormLoading(false);
-  announceVerification(`${copy.title}. ${summaryForVerdict(value)}`);
+  announceVerification(`${copy.title}. ${copy.summary}`);
   element("result-title")?.focus();
 }
 
@@ -1079,34 +1334,41 @@ function errorPresentation(error) {
   if (error instanceof VerifierRequestError) {
     if (error.code === "RATE_LIMITED") {
       const wait = error.retryAfterSeconds === null
-        ? "Please wait before trying again."
-        : `Please wait ${error.retryAfterSeconds} seconds before trying again.`;
+        ? "Please wait before running this case again."
+        : `Please wait ${error.retryAfterSeconds} seconds before running this case again.`;
       return {
         title: "Request limit reached",
-        message: `${wait} No transaction claim was made.`,
+        message: `${wait} No settlement-terms claim was made.`,
       };
     }
     if (error.code === "TIMED_OUT") {
       return {
         title: "Verification timed out",
-        message: "The configured Base sources did not complete within the bounded window. No transaction claim was made.",
+        message: "The fixed Base sources did not complete within the bounded window. No settlement-terms claim was made.",
       };
     }
     if (error.code === "SCHEMA_MISMATCH") {
       return {
         title: "Response could not be verified",
-        message: "The live response did not match the exact public evidence schema. Canary rejected it and made no transaction claim.",
+        message: "The live response did not match the exact public report schema. Canary rejected it and made no claim.",
+      };
+    }
+    if (error.code === "INVALID_INTENT") {
+      return {
+        title: "Intent was not accepted",
+        message: `The server rejected this requirement (${error.detail ?? "unsupported intent"}). No Base lookup claim was made.`,
       };
     }
   }
   return {
     title: "Verification unavailable",
-    message: "The configured Base sources are unavailable or the verifier is not ready. No transaction claim was made.",
+    message: "The fixed Base sources are unavailable or the verifier is not ready. No settlement-terms claim was made.",
   };
 }
 
 function showVerifierError(error) {
   const presentation = errorPresentation(error);
+  lastReport = null;
   setVerifierSections("verifier-error");
   setState("verifier-panel", "error");
   setVerdictChip("error", "unavailable");
@@ -1119,7 +1381,8 @@ function showVerifierError(error) {
   }
   setFormLoading(false);
   announceVerification(`${presentation.title}. ${presentation.message}`);
-  element("retry-verification")?.focus();
+  element("error-title")?.setAttribute("tabindex", "-1");
+  element("error-title")?.focus();
 }
 
 function retryAfterSeconds(response) {
@@ -1129,25 +1392,44 @@ function retryAfterSeconds(response) {
   return Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 600 ? seconds : null;
 }
 
-async function fetchBaseTransaction(transactionHash, signal) {
-  const query = new URLSearchParams({ transactionHash });
-  const response = await window.fetch(`${BASE_TRANSACTION_ROUTE}?${query.toString()}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    cache: "default",
+async function errorReason(response) {
+  try {
+    const value = await response.json();
+    return isRecord(value) && isRecord(value.error) && typeof value.error.reason === "string"
+      ? value.error.reason
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchIntentReport(request, signal) {
+  const response = await window.fetch(X402_INTENT_ROUTE, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      x402Version: 2,
+      transactionHash: request.transactionHash,
+      paymentRequirements: request.paymentRequirements,
+    }),
+    cache: "no-store",
     credentials: "same-origin",
     redirect: "error",
     signal,
   });
 
   if (!response.ok) {
-    if (response.status === 400) throw new VerifierRequestError("INVALID_REQUEST");
+    if (response.status === 400 || response.status === 413) {
+      throw new VerifierRequestError("INVALID_INTENT", await errorReason(response));
+    }
     if (response.status === 429) {
-      throw new VerifierRequestError("RATE_LIMITED", retryAfterSeconds(response));
+      throw new VerifierRequestError("RATE_LIMITED", null, retryAfterSeconds(response));
     }
     throw new VerifierRequestError("UNAVAILABLE");
   }
-
   const contentType = String(response.headers.get("Content-Type") ?? "").toLowerCase();
   if (!contentType.startsWith("application/json")) {
     throw new VerifierRequestError("SCHEMA_MISMATCH");
@@ -1158,23 +1440,24 @@ async function fetchBaseTransaction(transactionHash, signal) {
   } catch {
     throw new VerifierRequestError("SCHEMA_MISMATCH");
   }
-  if (!validatePublicBaseTransaction(value, transactionHash)) {
+  if (!validatePublicIntentReport(value, request)) {
     throw new VerifierRequestError("SCHEMA_MISMATCH");
   }
   return value;
 }
 
-async function verifyTransaction(transactionHash) {
+async function verifyCase(request) {
   const sequence = ++verifierRequestSequence;
   activeVerifierController?.abort();
   const controller = new AbortController();
   activeVerifierController = controller;
-  lastTransactionHash = transactionHash;
+  lastCaseRequest = request;
+  lastReport = null;
   showVerifierLoading();
 
   const timeout = window.setTimeout(() => controller.abort(), VERIFIER_TIMEOUT_MS);
   try {
-    const value = await fetchBaseTransaction(transactionHash, controller.signal);
+    const value = await fetchIntentReport(request, controller.signal);
     if (sequence === verifierRequestSequence) renderVerifierResult(value);
   } catch (error) {
     if (sequence !== verifierRequestSequence) return;
@@ -1189,43 +1472,108 @@ async function verifyTransaction(transactionHash) {
   }
 }
 
+async function copyReport() {
+  if (lastReport === null) return;
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(lastReport, null, 2));
+    setText("copy-report", "Copied");
+    announceVerification("JSON report copied to the clipboard.");
+    window.setTimeout(() => setText("copy-report", "Copy JSON report"), 1600);
+  } catch {
+    announceVerification("The browser could not copy the JSON report.");
+  }
+}
+
+function downloadReport() {
+  if (lastReport === null) return;
+  const blob = new Blob([`${JSON.stringify(lastReport, null, 2)}\n`], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `x402-case-${lastReport.caseId.slice(-12)}.json`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  announceVerification("JSON report download started.");
+}
+
+function resetVerifier() {
+  ++verifierRequestSequence;
+  activeVerifierController?.abort();
+  activeVerifierController = null;
+  lastCaseRequest = null;
+  lastReport = null;
+  setFormLoading(false);
+  clearAllInputErrors();
+  const input = element("transaction-hash");
+  const textarea = element("payment-requirements");
+  if (input) input.value = "";
+  if (textarea) textarea.value = "";
+  const preview = element("intent-preview");
+  if (preview) preview.hidden = true;
+  showVerifierIdle();
+  input?.focus({ preventScroll: true });
+  input?.scrollIntoView({ block: "center" });
+}
+
 function initializeVerifier() {
   const form = element("verify-form");
   const input = element("transaction-hash");
-  const again = element("verify-again");
-  const retry = element("retry-verification");
-  if (!form || !input) return;
+  const textarea = element("payment-requirements");
+  if (!form || !input || !textarea) return;
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    clearInputError();
+    clearAllInputErrors();
     const transactionHash = canonicalTransactionHash(input.value);
     if (transactionHash === null) {
-      showInputError("Enter exactly 0x followed by 64 hexadecimal characters, with no spaces.");
+      showFieldError(
+        "transaction-hash",
+        "transaction-hash-error",
+        "Enter exactly 0x followed by 64 hexadecimal characters, with no spaces.",
+      );
+      return;
+    }
+    let paymentRequirements;
+    try {
+      paymentRequirements = parsePaymentRequirementsInput(textarea.value);
+    } catch (error) {
+      showFieldError(
+        "payment-requirements",
+        "payment-requirements-error",
+        error instanceof IntentInputError ? error.message : "PaymentRequirements is invalid.",
+      );
       return;
     }
     input.value = transactionHash;
-    void verifyTransaction(transactionHash);
+    textarea.value = JSON.stringify(paymentRequirements, null, 2);
+    updateIntentPreview();
+    void verifyCase({ transactionHash, paymentRequirements });
   });
 
-  input.addEventListener("input", clearInputError);
-
-  again?.addEventListener("click", () => {
-    ++verifierRequestSequence;
-    activeVerifierController?.abort();
-    activeVerifierController = null;
-    lastTransactionHash = null;
-    setFormLoading(false);
-    clearInputError();
-    input.value = "";
-    showVerifierIdle();
-    input.focus({ preventScroll: true });
-    input.scrollIntoView({ block: "center" });
+  input.addEventListener("input", () => {
+    clearFieldError("transaction-hash", "transaction-hash-error");
   });
-
-  retry?.addEventListener("click", () => {
-    if (lastTransactionHash !== null) void verifyTransaction(lastTransactionHash);
+  textarea.addEventListener("input", () => {
+    clearFieldError("payment-requirements", "payment-requirements-error");
+    updateIntentPreview();
   });
+  element("load-example")?.addEventListener("click", () => {
+    clearAllInputErrors();
+    input.value = LIVE_EXAMPLE.transactionHash;
+    textarea.value = JSON.stringify(LIVE_EXAMPLE.paymentRequirements, null, 2);
+    updateIntentPreview();
+    input.focus();
+  });
+  element("verify-again")?.addEventListener("click", resetVerifier);
+  element("retry-verification")?.addEventListener("click", () => {
+    if (lastCaseRequest !== null) void verifyCase(lastCaseRequest);
+  });
+  element("copy-report")?.addEventListener("click", () => {
+    void copyReport();
+  });
+  element("download-report")?.addEventListener("click", downloadReport);
 }
 
 initializeTheme();

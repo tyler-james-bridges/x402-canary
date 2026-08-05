@@ -3,40 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Inspect finalized native-USDC EIP-3009 transaction evidence on Base through pinned, read-only observations—without a wallet, signature, payment, or transaction submission.">
+  <meta name="description" content="Compare the observable recipient and amount terms of a caller-declared x402 v2 requirement with finalized native-USDC EIP-3009 evidence on Base.">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="x402 Canary · Live Base Transaction Verifier">
-  <meta property="og:description" content="Inspect finalized native-USDC EIP-3009 receipt and log evidence on Base through a bounded, read-only verifier.">
+  <meta property="og:title" content="x402 Canary · Intent-Aware Payment Verifier">
+  <meta property="og:description" content="Compare an x402 v2 requirement with finalized, source-agreed native-USDC settlement evidence on Base.">
   <meta property="og:url" content="https://canary.0x402.sh/">
   <meta property="og:image" content="https://canary.0x402.sh/og-live-verifier.png">
   <meta property="og:image:width" content="1672">
   <meta property="og:image:height" content="941">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="x402 Canary · Live Base Transaction Verifier">
-  <meta name="twitter:description" content="Inspect finalized native-USDC EIP-3009 receipt and log evidence on Base through a bounded, read-only verifier.">
+  <meta name="twitter:title" content="x402 Canary · Intent-Aware Payment Verifier">
+  <meta name="twitter:description" content="Compare an x402 v2 requirement with finalized, source-agreed native-USDC settlement evidence on Base.">
   <meta name="twitter:image" content="https://canary.0x402.sh/og-live-verifier.png">
-  <title>x402 Canary · Live Base Transaction Verifier</title>
+  <title>x402 Canary · Intent-Aware Payment Verifier</title>
   <link rel="canonical" href="https://canary.0x402.sh/">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#verify">Skip to transaction verifier</a>
+  <a class="skip-link" href="#verify">Skip to settlement-terms verifier</a>
 
   <header class="site-header">
     <a class="brand" href="/" aria-label="x402 Canary home">
       <span class="brand-mark" aria-hidden="true"><span></span></span>
       <span class="brand-copy">
         <strong>x402 / canary</strong>
-        <small>Base evidence verifier</small>
+        <small>Payment evidence verifier</small>
       </span>
     </a>
 
-    <nav class="site-nav" aria-label="Transaction verifier">
+    <nav class="site-nav" aria-label="x402 settlement-terms verifier">
       <a href="#verify">Verify</a>
       <a href="#system">Method</a>
       <a href="#matrix">Outcomes</a>
@@ -59,40 +59,84 @@
     <section class="hero" id="verify" aria-labelledby="hero-title">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-copy">
-        <p class="eyebrow">Base mainnet · native USDC · live read-only verification</p>
-        <h1 id="hero-title"><span>Verify a Base</span><span class="hero-signal">USDC transaction.</span></h1>
+        <p class="eyebrow">x402 v2 · Base mainnet · native USDC · read only</p>
+        <h1 id="hero-title"><span>Compare x402</span><span class="hero-signal">settlement terms.</span></h1>
         <p class="hero-lead">
-          Paste a transaction hash. Canary compares registry-pinned Base observations and
-          reports finalized native-USDC EIP-3009 receipt and log evidence.
+          Paste a Base transaction hash and caller-declared PaymentRequirements. Canary compares
+          the observable recipient and amount terms with finalized, source-agreed native-USDC evidence.
+          It does not prove x402 wire/version provenance.
         </p>
 
         <form class="verify-form" id="verify-form" novalidate>
-          <label for="transaction-hash">Base transaction hash</label>
-          <div class="verify-control">
-            <input
-              id="transaction-hash"
-              name="transactionHash"
-              type="text"
-              inputmode="text"
-              autocomplete="off"
-              autocapitalize="none"
-              spellcheck="false"
-              maxlength="66"
-              placeholder="0x…"
-              aria-describedby="transaction-hash-help transaction-hash-error"
-              aria-invalid="false"
-            >
+          <fieldset class="case-fields">
+            <legend class="sr-only">x402 settlement-terms case inputs</legend>
+            <div class="form-field">
+              <div class="field-label-row">
+                <label for="transaction-hash">Base transaction hash</label>
+                <span>public onchain identifier</span>
+              </div>
+              <input
+                id="transaction-hash"
+                name="transactionHash"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                maxlength="66"
+                placeholder="0x…"
+                aria-describedby="transaction-hash-help transaction-hash-error"
+                aria-invalid="false"
+              >
+              <p class="field-help" id="transaction-hash-help">
+                A public <code>0x</code>-prefixed, 32-byte Base transaction hash.
+              </p>
+              <p class="field-error" id="transaction-hash-error" role="alert" hidden></p>
+            </div>
+
+            <div class="form-field">
+              <div class="field-label-row">
+                <label for="payment-requirements">PaymentRequirements JSON</label>
+                <span>declared intent · 4 KB maximum</span>
+              </div>
+              <textarea
+                id="payment-requirements"
+                name="paymentRequirements"
+                rows="9"
+                maxlength="4096"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder='{ "scheme": "exact", "network": "eip155:8453", … }'
+                aria-describedby="payment-requirements-help payment-requirements-error"
+                aria-invalid="false"
+              ></textarea>
+              <p class="field-help" id="payment-requirements-help">
+                Paste one public x402 v2 requirement. Never paste a payment signature, signed
+                authorization, private key, seed phrase, or wallet export.
+              </p>
+              <p class="field-error" id="payment-requirements-error" role="alert" hidden></p>
+            </div>
+          </fieldset>
+
+          <div class="intent-preview" id="intent-preview" hidden>
+            <span>Parsed requirement</span>
+            <strong id="intent-preview-summary"></strong>
+          </div>
+
+          <div class="form-actions">
             <button id="verify-button" type="submit">
-              <span class="button-label">Verify transaction</span>
+              <span class="button-label">Verify settlement terms</span>
               <span class="button-progress" aria-hidden="true"></span>
             </button>
+            <button class="secondary-action sample-action" id="load-example" type="button">
+              Load live example
+            </button>
           </div>
-          <p class="field-help" id="transaction-hash-help">
-            Enter a public <code>0x</code>-prefixed, 32-byte transaction hash. No RPC URL,
-            wallet, signature, or payment instruction is accepted. The hash is sent in a URL
-            query and may appear in platform request logs.
+          <p class="form-boundary">
+            Input cannot select an RPC, token contract, wallet, signer, or transaction target.
+            Collection remains fixed to Base mainnet and native USDC.
           </p>
-          <p class="field-error" id="transaction-hash-error" role="alert" hidden></p>
         </form>
 
         <ul class="verifier-locks" aria-label="Fixed verification boundary">
@@ -103,7 +147,7 @@
         </ul>
       </div>
 
-      <aside
+      <div
         class="verifier-panel"
         id="verifier-panel"
         data-state="idle"
@@ -111,36 +155,45 @@
         aria-busy="false"
       >
         <div class="verifier-panel-head">
-          <span class="card-kicker">Transaction evidence</span>
+          <span class="card-kicker">Payment case</span>
           <span class="verdict-chip" id="verdict-chip" data-verdict="idle">ready</span>
         </div>
 
         <div class="verifier-idle" id="verifier-idle">
-          <h2 id="verifier-title">What this check establishes</h2>
+          <h2 id="verifier-title">What this report can establish</h2>
           <ol class="check-list">
-            <li><span>01</span><div>Configured-source agreement</div></li>
-            <li><span>02</span><div>Canonical receipt and execution status</div></li>
-            <li><span>03</span><div>Shared finalized Base anchor</div></li>
-            <li><span>04</span><div>Adjacent <code>AuthorizationUsed → Transfer</code> evidence</div></li>
+            <li><span>01</span><div>Strict x402 v2 requirement normalization</div></li>
+            <li><span>02</span><div>Fixed-source Base receipt and finality</div></li>
+            <li><span>03</span><div>Native-USDC EIP-3009 payment evidence</div></li>
+            <li><span>04</span><div>Exact recipient and amount comparison</div></li>
           </ol>
           <p class="verifier-boundary">
-            This verifies public onchain receipt and USDC log facts only. It does not prove
-            intended x402 terms, HTTP delivery, business effect, or retry safety.
+            A match establishes only observable recipient and amount alignment. It does not
+            prove x402 provenance, requirement issuance, resource binding, HTTP delivery,
+            business effect, or retry safety.
           </p>
         </div>
 
         <div class="verifier-loading" id="verifier-loading" hidden>
           <div class="loading-orbit" aria-hidden="true"><span></span></div>
-          <h2 id="loading-title">Comparing Base observations</h2>
-          <p id="loading-message">Reading the pinned sources and locating a shared finalized anchor.</p>
+          <h2 id="loading-title">Building the payment case</h2>
+          <p id="loading-message">Normalizing the requirement and comparing pinned Base observations.</p>
         </div>
 
         <div class="verifier-result" id="verifier-result" hidden>
-          <p class="result-kicker" id="result-kicker">Transaction-only observation</p>
-          <h2 id="result-title" tabindex="-1">Evidence result</h2>
+          <p class="result-kicker" id="result-kicker">Settlement requirement report</p>
+          <h2 id="result-title" tabindex="-1">Payment case result</h2>
           <p class="result-summary" id="result-summary"></p>
 
           <dl class="result-facts">
+            <div>
+              <dt>Case ID</dt>
+              <dd><code id="result-case-id">—</code></dd>
+            </div>
+            <div>
+              <dt>Report hash</dt>
+              <dd><code id="result-report-hash">—</code></dd>
+            </div>
             <div>
               <dt>Transaction</dt>
               <dd><code id="result-transaction-hash">—</code></dd>
@@ -163,39 +216,45 @@
             </div>
           </dl>
 
+          <section class="comparison-section" aria-labelledby="comparison-title">
+            <div class="settlement-heading">
+              <h3 id="comparison-title">Requirement alignment</h3>
+              <span>expected ↔ observed</span>
+            </div>
+            <div class="comparison-list" id="comparison-list"></div>
+          </section>
+
           <section class="settlement-section" id="settlement-section" aria-labelledby="settlement-title" hidden>
             <div class="settlement-heading">
-              <h3 id="settlement-title">Native-USDC event pairs</h3>
-              <span id="settlement-count">0 observed</span>
+              <h3 id="settlement-title">Observed payment</h3>
+              <span>payer + nonce are observed only</span>
             </div>
-            <div class="settlement-list" id="settlement-list"></div>
-            <p class="truncation-note" id="truncation-note" hidden>
-              Additional pairs were omitted by the bounded public response.
-            </p>
+            <dl class="observed-payment" id="observed-payment"></dl>
           </section>
 
           <div class="result-boundary" role="note">
-            <strong>Scope: transaction only</strong>
-            <p>
-              Expected x402 intent, recipient, amount, HTTP delivery, business effect,
-              provider consensus truth, and retry safety were not evaluated.
-            </p>
+            <strong>Not established by this report</strong>
+            <p>x402 wire/version exchange · requirement authenticity or resource binding · expected payer, nonce, or authorization window · timeout compliance · HTTP delivery · business effect · duplicate-purchase status · retry safety.</p>
           </div>
 
-          <button class="secondary-action" id="verify-again" type="button">Check another transaction</button>
+          <div class="report-actions">
+            <button class="secondary-action" id="copy-report" type="button">Copy JSON report</button>
+            <button class="secondary-action" id="download-report" type="button">Download .json</button>
+            <button class="secondary-action" id="verify-again" type="button">Start new case</button>
+          </div>
         </div>
 
         <div class="verifier-error" id="verifier-error" hidden>
           <span class="error-mark" aria-hidden="true">!</span>
           <h2 id="error-title">Verification unavailable</h2>
           <p id="error-message">
-            No transaction claim was made. Try the same public hash again in a moment.
+            No settlement-terms claim was made. Run the same case again in a moment.
           </p>
-          <button class="secondary-action" id="retry-verification" type="button">Try again</button>
+          <button class="secondary-action" id="retry-verification" type="button">Run verification again</button>
         </div>
 
         <p class="sr-only" id="verification-announcement" role="status" aria-live="polite"></p>
-      </aside>
+      </div>
     </section>
 
     <section class="live-section section-shell" aria-labelledby="live-title">
@@ -254,73 +313,73 @@
       <div class="section-heading">
         <div>
           <p class="section-index">02 / evidence method</p>
-          <h2 id="system-title">Four bounded layers</h2>
+          <h2 id="system-title">Four bounded steps</h2>
         </div>
         <p class="section-intro">
-          Each layer narrows a different uncertainty. Composition raises local integrity;
-          it does not turn local evidence into external truth.
+          Normalize the declared requirement, observe fixed Base sources, compare only
+          supported settlement fields, then seal one deterministic no-action report.
         </p>
       </div>
 
       <ol class="layer-stack">
-        <li class="layer-card" data-component-id="base-collector">
+        <li class="layer-card" data-component-id="requirement-normalizer">
           <div class="layer-number">01</div>
           <div class="layer-main">
             <div class="layer-title-row">
-              <h3>Base Collector <span>v0.1</span></h3>
+              <h3>Requirement Normalizer <span>v0.2</span></h3>
               <span class="layer-state" data-field="state">implemented</span>
             </div>
             <p data-field="boundary">
-              Registry-pinned, read-only Base RPC collection with canonical shared-anchor
-              and native-USDC authorization-state checks.
+              Strictly accepts one x402 v2 exact requirement for Base native USDC.
+              Unsupported fields, versions, schemes, assets, and methods fail before RPC.
             </p>
           </div>
-          <div class="layer-output"><span>Emits</span> branded Base observations</div>
+          <div class="layer-output"><span>Emits</span> normalized intent + intentHash</div>
         </li>
 
-        <li class="layer-card" data-component-id="effect-authority">
+        <li class="layer-card" data-component-id="base-collector">
           <div class="layer-number">02</div>
           <div class="layer-main">
             <div class="layer-title-row">
-              <h3>Effect Authority <span>v0.1</span></h3>
+              <h3>Fixed Base Collector <span>v0.1</span></h3>
               <span class="layer-state" data-field="state">implemented</span>
             </div>
             <p data-field="boundary">
-              Ed25519 verification against an out-of-band registry, locally derived query
-              coordinates, key lifecycle, and a signed effect outcome.
+              Registry-pinned, read-only Base collection requires a canonical shared
+              finalized anchor and exact native-USDC EIP-3009 event pairing.
             </p>
           </div>
-          <div class="layer-output"><span>Emits</span> verified effect attestations</div>
+          <div class="layer-output"><span>Emits</span> source-agreed Base observation</div>
         </li>
 
-        <li class="layer-card" data-component-id="journal-bundle">
+        <li class="layer-card" data-component-id="settlement-comparator">
           <div class="layer-number">03</div>
           <div class="layer-main">
             <div class="layer-title-row">
-              <h3>Journal Bundle <span>v0.2</span></h3>
+              <h3>Settlement Comparator <span>v0.2</span></h3>
               <span class="layer-state" data-field="state">implemented</span>
             </div>
             <p data-field="boundary">
-              Content-addressed artifacts and two adjacent hash-linked commits bind the
-              exact evaluator input, result, and closure receipt.
+              Compares recipient and atomic amount only after one finalized payment is
+              established. Scheme and timeout remain declared protocol metadata.
             </p>
           </div>
-          <div class="layer-output"><span>Emits</span> replayable integrity closure</div>
+          <div class="layer-output"><span>Emits</span> exact alignment rows + verdict</div>
         </li>
 
-        <li class="layer-card" data-component-id="shadow-runner">
+        <li class="layer-card" data-component-id="report-seal">
           <div class="layer-number">04</div>
           <div class="layer-main">
             <div class="layer-title-row">
-              <h3>Shadow Runner <span>v0.1</span></h3>
+              <h3>Report Seal <span>v0.2</span></h3>
               <span class="layer-state" data-field="state">implemented</span>
             </div>
             <p data-field="boundary">
-              Composes pinned collection, attestation, journal, artifact, and exact-replay
-              boundaries into a sanitized no-action result.
+              Domain-separated case and report hashes bind normalized inputs to the
+              sanitized response. Hashes identify content; they are not signatures.
             </p>
           </div>
-          <div class="layer-output"><span>Emits</span> actionDirective: none</div>
+          <div class="layer-output"><span>Emits</span> unsigned JSON report · no action</div>
         </li>
       </ol>
     </section>
@@ -328,97 +387,77 @@
     <section class="section-shell" id="matrix" aria-labelledby="matrix-title">
       <div class="section-heading">
         <div>
-          <p class="section-index">03 / conformance</p>
-          <h2 id="matrix-title">Nine deterministic outcomes</h2>
+          <p class="section-index">03 / verdict contract</p>
+          <h2 id="matrix-title">Six fail-closed outcomes</h2>
         </div>
         <p class="section-intro" id="matrix-note">
-          The checked-in conformance matrix separates Base settlement, business effect,
-          terminal state, and the at-most-one invariant.
+          The public contract keeps Base evidence, requirement comparison, claim status,
+          and execution authority separate.
         </p>
       </div>
 
       <div class="table-shell" tabindex="0" role="region" aria-label="Deterministic outcome matrix">
         <table>
-          <caption>Shadow Runner v0.1 conformance matrix</caption>
+          <caption>x402 requirement verifier v0.2 verdict matrix</caption>
           <thead>
             <tr>
               <th scope="col">Case</th>
               <th scope="col">Base evidence</th>
-              <th scope="col">Effect evidence</th>
-              <th scope="col">Terminal state</th>
-              <th scope="col">Invariant</th>
+              <th scope="col">Comparison</th>
+              <th scope="col">Claim made</th>
+              <th scope="col">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr id="outcome-row-0">
-              <th scope="row" data-field="case">01 · confirmed_committed</th>
+              <th scope="row" data-field="case">01 · settlement_terms_matched</th>
               <td data-field="base"><span class="evidence-token positive">confirmed</span></td>
-              <td data-field="effect">committed</td>
-              <td data-field="terminalState"><code>settled_delivered</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+              <td data-field="comparison">matched</td>
+              <td data-field="claim"><span class="invariant pass">yes</span></td>
+              <td data-field="action"><code>none</code></td>
             </tr>
             <tr id="outcome-row-1">
-              <th scope="row" data-field="case">02 · absent_absent</th>
-              <td data-field="base">absent</td>
-              <td data-field="effect">absent</td>
-              <td data-field="terminalState"><code>settlement_failed</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+              <th scope="row" data-field="case">02 · settlement_terms_mismatch</th>
+              <td data-field="base"><span class="evidence-token positive">confirmed</span></td>
+              <td data-field="comparison"><span class="evidence-token alert">mismatched</span></td>
+              <td data-field="claim"><span class="invariant pass">yes</span></td>
+              <td data-field="action"><code>none</code></td>
             </tr>
             <tr id="outcome-row-2">
-              <th scope="row" data-field="case">03 · pending_confirmations</th>
+              <th scope="row" data-field="case">03 · pending_finality</th>
               <td data-field="base">pending_finality</td>
-              <td data-field="effect">committed</td>
-              <td data-field="terminalState"><code>settled_pending_finality</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+              <td data-field="comparison">not_evaluated</td>
+              <td data-field="claim"><span class="invariant block">no</span></td>
+              <td data-field="action"><code>none</code></td>
             </tr>
             <tr id="outcome-row-3">
-              <th scope="row" data-field="case">04 · base_contradiction</th>
-              <td data-field="base"><span class="evidence-token alert">contradiction</span></td>
-              <td data-field="effect">committed</td>
-              <td data-field="terminalState"><code>evidence_contradiction</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+              <th scope="row" data-field="case">04 · not_observed</th>
+              <td data-field="base">not_observed</td>
+              <td data-field="comparison">not_evaluated</td>
+              <td data-field="claim"><span class="invariant block">no</span></td>
+              <td data-field="action"><code>none</code></td>
             </tr>
             <tr id="outcome-row-4">
-              <th scope="row" data-field="case">05 · duplicate_settlement</th>
-              <td data-field="base"><span class="evidence-token alert">duplicate</span></td>
-              <td data-field="effect">committed</td>
-              <td data-field="terminalState"><code>duplicate_settlement</code></td>
-              <td data-field="invariant"><span class="invariant block">fail</span></td>
+              <th scope="row" data-field="case">05 · multiple_payments_observed</th>
+              <td data-field="base"><span class="evidence-token alert">multiple</span></td>
+              <td data-field="comparison">not_evaluated</td>
+              <td data-field="claim"><span class="invariant block">no</span></td>
+              <td data-field="action"><code>none</code></td>
             </tr>
             <tr id="outcome-row-5">
-              <th scope="row" data-field="case">06 · confirmed_effect_absent</th>
-              <td data-field="base">confirmed</td>
-              <td data-field="effect">absent</td>
-              <td data-field="terminalState"><code>settled_delivery_failed</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
-            </tr>
-            <tr id="outcome-row-6">
-              <th scope="row" data-field="case">07 · confirmed_effect_unknown</th>
-              <td data-field="base">confirmed</td>
-              <td data-field="effect">unknown</td>
-              <td data-field="terminalState"><code>settled_delivery_unverified</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
-            </tr>
-            <tr id="outcome-row-7">
-              <th scope="row" data-field="case">08 · confirmed_effect_duplicate</th>
-              <td data-field="base">confirmed</td>
-              <td data-field="effect"><span class="evidence-token alert">duplicate</span></td>
-              <td data-field="terminalState"><code>settled_delivery_failed</code></td>
-              <td data-field="invariant"><span class="invariant block">fail</span></td>
-            </tr>
-            <tr id="outcome-row-8">
-              <th scope="row" data-field="case">09 · confirmed_effect_contradiction</th>
-              <td data-field="base">confirmed</td>
-              <td data-field="effect"><span class="evidence-token alert">contradiction</span></td>
-              <td data-field="terminalState"><code>evidence_contradiction</code></td>
-              <td data-field="invariant"><span class="invariant pass">pass</span></td>
+              <th scope="row" data-field="case">06 · contradiction</th>
+              <td data-field="base"><span class="evidence-token alert">contradiction</span></td>
+              <td data-field="comparison">not_evaluated</td>
+              <td data-field="claim"><span class="invariant block">no</span></td>
+              <td data-field="action"><code>none</code></td>
             </tr>
           </tbody>
         </table>
       </div>
       <p class="matrix-footnote">
-        These rows are evidence classifications, not instructions. The public result
-        intentionally omits internal replay verdicts and always carries <code>actionDirective: none</code>.
+        A mismatch is an evidentiary claim only when one finalized payment exists. Pending,
+        missing, multiple, and contradictory observations never become a match. Every row
+        carries <code>actionDirective: none</code>.
       </p>
     </section>
 
@@ -429,7 +468,8 @@
           <h2 id="limits-title">What remains unproven</h2>
         </div>
         <p class="section-intro">
-          Local integrity is meaningful only when its limits stay attached to every result.
+          Settlement alignment is useful only when protocol, authorization, resource,
+          and delivery limits stay attached to every report.
         </p>
       </div>
 
@@ -438,32 +478,32 @@
           <span class="limit-value" id="external-truth-value">false</span>
           <h3>External truth proven</h3>
           <p>
-            HTTPS authenticates configured endpoints, not Base consensus truth. Signed
-            effect claims do not independently prove the operator database was truthful.
+            HTTPS authenticates configured RPC endpoints, not Base consensus truth.
+            The unanimous result remains bounded by those operator-declared trust domains.
           </p>
         </article>
         <article class="limit-card critical">
-          <span class="limit-value" id="anti-rollback-value">false</span>
-          <h3>External anti-rollback checkpoint</h3>
+          <span class="limit-value" id="requirement-authenticity-value">false</span>
+          <h3>Requirement authenticity proven</h3>
           <p>
-            A local hash chain detects changes relative to retained state. Full replacement
-            of the journal, artifacts, and receipts still requires an external WORM or signed anchor.
+            PaymentRequirements is caller-declared. A deterministic intent hash identifies
+            its content but does not prove who issued, signed, or accepted it.
           </p>
         </article>
         <article class="limit-card">
-          <span class="limit-value" id="database-truth-value">false</span>
-          <h3>Operator database truth proven</h3>
+          <span class="limit-value" id="resource-binding-value">false</span>
+          <h3>Resource binding proven</h3>
           <p>
-            Ed25519 proves who signed a policy-matching statement. It does not prove how
-            the signing adapter queried its primary system of record.
+            A bare PaymentRequirements object does not contain the protected resource URL.
+            The transaction cannot reveal which HTTP resource the payment purchased.
           </p>
         </article>
         <article class="limit-card">
-          <span class="limit-value" id="writer-trust-value">required</span>
-          <h3>Trusted local writer</h3>
+          <span class="limit-value" id="delivery-value">false</span>
+          <h3>Delivery or business effect proven</h3>
           <p>
-            Journal integrity depends on controlled append access and cooperating lock
-            discipline. A stale crash sentinel requires manual, evidence-preserving recovery.
+            Onchain settlement does not establish HTTP delivery, business effect, logical
+            purchase uniqueness, or whether another payment attempt is safe.
           </p>
         </article>
       </div>
@@ -471,9 +511,10 @@
       <aside class="truth-banner" role="note">
         <strong>Precise claim</strong>
         <p>
-          Core commit <code>3ead868</code> demonstrates deterministic local composition of
-          pinned Base observations, signed effect evidence, content-addressed artifacts,
-          and adjacent journal commits. It does not authorize an action or certify external reality.
+          For the supported x402 v2 exact profile, one finalized native-USDC EIP-3009
+          payment can prove that the declared recipient and amount match. It cannot prove
+          that an x402 wire/version exchange occurred, requirement issuance, resource binding,
+          authorization-window policy, delivery, effect, global duplicate status, or retry safety.
         </p>
       </aside>
     </section>
@@ -482,7 +523,7 @@
   <footer class="site-footer">
     <div>
       <strong>x402 Canary</strong>
-      <span>live Base transaction verifier · observation only</span>
+      <span>intent-aware x402 verifier · observation only</span>
     </div>
     <p>
       Machine-readable surface contract: <a href="/llms.txt">llms.txt</a>
