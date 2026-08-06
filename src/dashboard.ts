@@ -10,10 +10,18 @@ import {
 } from "./public-base-transaction-config.js";
 import {
   PublicBaseTransactionRequestError,
+  createPublicBaseTransactionResponse,
   verifyPublicBaseTransaction,
 } from "./public-base-transaction.js";
 import { createPublicEvidenceStatus } from "./public-evidence-status.js";
 import { PUBLIC_HEALTH_STATUS } from "./public-health.js";
+import {
+  PUBLIC_X402_INTENT_MAX_WIRE_BODY_BYTES,
+  PublicX402IntentRequestError,
+  createPublicX402IntentResponse,
+  evaluatePublicX402Intent,
+  parsePublicX402IntentRequest,
+} from "./public-x402-intent.js";
 
 const DEFAULT_PORT = 3402;
 const DASHBOARD_HOST = "127.0.0.1";
@@ -209,6 +217,122 @@ async function handleLocalBaseTransaction(
   }
 }
 
+async function readBoundedJsonBody(req: http.IncomingMessage): Promise<unknown> {
+  let bytes = 0;
+  const chunks: Buffer[] = [];
+  for await (const raw of req) {
+    const chunk = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+    bytes += chunk.byteLength;
+    if (bytes > PUBLIC_X402_INTENT_MAX_WIRE_BODY_BYTES) {
+      req.resume();
+      throw new PublicX402IntentRequestError("REQUEST_BODY_TOO_LARGE", 413);
+    }
+    chunks.push(chunk);
+  }
+  if (bytes === 0) throw new PublicX402IntentRequestError("REQUEST_BODY_INVALID", 400);
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  } catch {
+    throw new PublicX402IntentRequestError("REQUEST_BODY_INVALID", 400);
+  }
+}
+
+function localJsonContentType(req: http.IncomingMessage): boolean {
+  const contentType = req.headers["content-type"];
+  return (
+    typeof contentType === "string" &&
+    /^application\/json(?:\s*;\s*charset=(?:utf-8|UTF-8))?$/.test(contentType)
+  );
+}
+
+async function handleLocalX402Intent(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  requestUrl: URL,
+): Promise<void> {
+  if (!localRequestContextAllowed(req)) {
+    sameOriginJsonResponse(res, 400, {
+      error: { code: "INVALID_REQUEST", reason: "REQUEST_CONTEXT_INVALID" },
+      status: "invalid",
+    });
+    return;
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(new Error("PUBLIC_X402_INTENT_DEADLINE")),
+    PUBLIC_BASE_TRANSACTION_DEADLINE_MS,
+  );
+  timeout.unref?.();
+  const abort = () => controller.abort(new Error("CLIENT_ABORTED"));
+  req.once("aborted", abort);
+  try {
+    if (req.method === "POST" && !localJsonContentType(req)) {
+      throw new PublicX402IntentRequestError("CONTENT_TYPE_INVALID", 400);
+    }
+    const body = req.method === "POST" ? await readBoundedJsonBody(req) : undefined;
+    const parsed = parsePublicX402IntentRequest({
+      method: req.method,
+      url: req.url,
+      query: localQuery(requestUrl),
+      body,
+    });
+    const checkedAt = new Date().toISOString();
+    const runtime = createPublicBaseTransactionRpcRuntime(controller.signal);
+    const observation = await collectBaseTransactionObservation(
+      runtime.registry,
+      runtime.requester,
+      { transactionHash: parsed.transactionHash, checkedAt },
+    );
+    const base = createPublicBaseTransactionResponse(
+      observation,
+      parsed.transactionHash,
+      checkedAt,
+    );
+    const evaluation = evaluatePublicX402Intent(parsed, observation);
+    sameOriginJsonResponse(
+      res,
+      200,
+      createPublicX402IntentResponse(parsed, base, evaluation),
+    );
+  } catch (error) {
+    if (error instanceof PublicX402IntentRequestError) {
+      if (error.statusCode === 405) res.setHeader("Allow", "POST");
+      const intentError =
+        error.code.startsWith("PAYMENT_REQUIREMENTS_") ||
+        error.code === "X402_VERSION_UNSUPPORTED";
+      sameOriginJsonResponse(res, error.statusCode, {
+        error: {
+          code:
+            error.statusCode === 405
+              ? "METHOD_NOT_ALLOWED"
+              : intentError
+                ? "INVALID_INTENT"
+                : "INVALID_REQUEST",
+          reason: error.code,
+          message:
+            error.statusCode === 405
+              ? "x402 requirement verification supports POST only."
+              : intentError
+                ? "Provide one supported x402 v2 exact Base native-USDC EIP-3009 PaymentRequirements object."
+                : "Provide one bounded JSON request with x402Version, transactionHash, and paymentRequirements.",
+        },
+        status: "invalid",
+      });
+      return;
+    }
+    sameOriginJsonResponse(res, 503, {
+      error: {
+        code: "VERIFICATION_UNAVAILABLE",
+        message: "Fixed-source Base verification is temporarily unavailable.",
+      },
+      status: "unavailable",
+    });
+  } finally {
+    clearTimeout(timeout);
+    req.off("aborted", abort);
+  }
+}
+
 export function createDashboardServer(): http.Server {
   return http.createServer((req, res) => {
     const requestUrl = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -288,6 +412,11 @@ export function createDashboardServer(): http.Server {
 
     if (route === "/api/base-transaction") {
       void handleLocalBaseTransaction(req, res, requestUrl);
+      return;
+    }
+
+    if (route === "/api/x402-intent") {
+      void handleLocalX402Intent(req, res, requestUrl);
       return;
     }
 

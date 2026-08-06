@@ -1,8 +1,15 @@
 export const PUBLIC_HEALTH_STATUS = Object.freeze({
-  schemaVersion: "0.1",
+  schemaVersion: "0.2",
   service: "x402-canary",
   status: "operational_read_only",
-  mode: "live_base_transaction_verification",
+  mode: "live_x402_requirement_verification",
+  intentAwareRequirementVerification: Object.freeze({
+    enabled: true,
+    schemaVersion: "0.2",
+    scope: "supported_x402_v2_settlement_terms",
+    requirementTransport: "request_body",
+    paymentRequirementsForwardedToRpc: false,
+  }),
   fixedSourceBaseVerification: Object.freeze({
     enabled: true,
     networkId: "eip155:8453",
