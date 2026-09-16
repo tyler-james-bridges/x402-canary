@@ -5,8 +5,9 @@
 This repository is in live read-only verification and no-spend mode.
 
 - `npm start` serves the local dashboard on `127.0.0.1` only.
+- `/api/x402-intent` accepts one strict x402 v2 `PaymentRequirements` object and one Base transaction hash, then returns a read-only settlement-term report over the same fixed observer. The requirement is caller-declared evidence, not execution authority.
 - `/api/base-transaction` accepts one Base transaction hash and reads exactly two code-pinned, server-owned Base RPC origins. The hash is the only caller-selected lookup value.
-- The local server and public API handlers do not fetch caller-selected URLs, accept RPC origins or methods, or fan out beyond the fixed verifier registry.
+- The local server and public API handlers do not fetch caller-selected URLs, accept RPC origins or methods, or fan out beyond the fixed verifier registry. The transaction hash is necessarily used for fixed-source RPC lookup; `PaymentRequirements` is evaluated locally and is not forwarded to RPC providers.
 - Public probe, trust, and paid-service routes return containment errors.
 - `src/endpoints.ts` intentionally contains no targets.
 - Do not restore a scheduler, target list, or arbitrary-URL proxy without an approved bounded policy, operator-owned fixtures, and explicit authorization.
@@ -14,6 +15,19 @@ This repository is in live read-only verification and no-spend mode.
 Source containment does not prove that any previously deployed Vercel or Bankr configuration has been unpublished. Deployment changes require a separate, explicit release action and verification.
 
 ## Payment constraints
+
+The public requirement verifier accepts only:
+
+- x402 version `2`
+- the `exact` scheme
+- Base mainnet (`eip155:8453`)
+- native Base USDC
+- the EIP-3009 `USD Coin` / `2` token domain
+- a positive canonical atomic amount
+- a nonzero `payTo`
+- a positive declared `maxTimeoutSeconds` no greater than 86,400
+
+It fails closed before constructing an RPC runtime for every other shape. `settlement_terms_matched` is limited to the supported settlement slice: one untruncated finalized EIP-3009 event pair whose recipient and atomic amount match the normalized caller declaration. Timeout remains `declared_only`. Never describe this verdict as proof of requirement authenticity, resource binding, an expected payer or nonce, authorization-window or signature validity, timeout compliance, HTTP delivery, business effect, duplicate purchase, or retry safety.
 
 The deterministic challenge gate accepts only:
 
@@ -43,9 +57,10 @@ git diff --check
 ## Important files
 
 - `src/index.ts` and `src/dashboard.ts`: contained loopback-only startup path
-- `src/public-base-transaction*.ts` and `api/base-transaction.ts`: the only public fixed-source Base RPC path; strict transaction-hash-only input, shared deadline, sanitized DTO, and no execution authority
+- `src/evidence/x402-intent.ts`, `src/public-x402-intent.ts`, and `api/x402-intent.ts`: strict supported-requirement normalization, pure comparison, sanitized v0.2 report, and POST-only public boundary
+- `src/public-base-transaction*.ts` and `api/base-transaction.ts`: lower-level public fixed-source Base RPC path; strict transaction-hash-only input, shared deadline, sanitized DTO, and no execution authority
 - `src/public-evidence-status.ts` and `api/evidence-status.ts`: immutable, sanitized release status; never import journals, artifacts, collectors, action modules, or environment data beyond the two allowlisted Vercel fields
-- `public/index.html`, `public/styles.css`, and `public/app.js`: read-only production verifier; same-origin API requests, one transaction-hash form, no caller-selected network target, payment prompt, wallet, or unsafe HTML sink
+- `public/index.html`, `public/styles.css`, and `public/app.js`: read-only production verifier; same-origin API requests, bounded transaction-hash and `PaymentRequirements` inputs, no caller-selected network target, payment prompt, wallet, or unsafe HTML sink
 - `src/canary.ts`: disabled legacy probe entry point
 - `src/endpoints.ts`: intentionally empty target registry
 - `src/contracts.ts` and `src/load-contract.ts`: exact-only Base contract schema and validation
@@ -64,6 +79,7 @@ git diff --check
 - `examples/base-*.json`: secret-free Base registry/request and historical live conformance receipt
 - `src/verify.ts`: CLI with the paid-execution kill switch
 - `src/__tests__/public-containment.test.ts`: executable containment assertions
+- `docs/public-x402-intent-v0.2.md`: exact public request/response, verdict, privacy, containment, and limitation contract
 - `README.md`: user-facing status and remaining gates
 
 ## Remaining gates before paid execution
@@ -81,7 +97,7 @@ Do not enable paid execution until, at minimum:
 
 Never promote a caller-supplied source label or `authoritative: true` flag into trusted evidence without the corresponding configured adapter.
 
-The public verifier is not an operator-result viewer. Private journals, artifacts, operation data, effect identifiers, retry verdicts, registry material, signatures, raw receipts, and provider errors stay off the public network. Its only caller-selected value is a canonical Base transaction hash sent to `/api/base-transaction`; network, asset, providers, origins, methods, finality, and policy remain server-owned. Keep every execution-capability flag false and keep the legacy trust/preflight functions at HTTP 410.
+The public verifier is not an operator-result viewer. Private journals, artifacts, operation data, effect identifiers, retry verdicts, registry material, signatures, raw receipts, and provider errors stay off the public network. The intent route accepts only a canonical Base transaction hash and the strictly supported caller-declared `PaymentRequirements`; it accepts no resource URL, RPC target, provider, origin, method, block tag, finality choice, payment header, or signature. Only the transaction hash reaches the fixed-source lookup. Network, asset, providers, origins, methods, finality, and policy remain server-owned. Keep every execution-capability flag false and keep the legacy trust/preflight functions at HTTP 410.
 
 Treat Vercel and Bankr as independent deployment surfaces. Verification of `canary.0x402.sh` does not establish the state of a separately hosted Bankr listing, and the local empty Bankr manifest must not be used as proof of remote removal.
 

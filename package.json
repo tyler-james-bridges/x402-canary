@@ -1,7 +1,7 @@
 {
   "name": "x402-canary",
   "version": "1.0.0",
-  "description": "Read-only Base transaction evidence verifier for native-USDC EIP-3009 events",
+  "description": "Intent-aware read-only verifier for supported x402 v2 Base USDC settlement requirements",
   "main": "src/index.ts",
   "scripts": {
     "dev": "npx tsx src/index.ts",

@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "day-008",
+  "series": "aifi-evidence-kernel",
+  "number": 8,
+  "arc": "live-base-verifier",
+  "status": "closed",
+  "startedAt": "2026-08-04T23:18:18.619Z",
+  "sourceIssue": null,
+  "repository": {
+    "root": "/Users/tjb/code/x402-canary",
+    "branch": "feat/base-evidence-kernel",
+    "head": "46b494ae231724faa7c1cb843b534dbac5fe6bea",
+    "startingStatus": []
+  },
+  "question": "Can the static evidence console become a useful live Base transaction verifier that cross-checks fixed server-side Base sources and renders a deterministic, honest receipt/finality verdict from only a transaction hash, without exposing arbitrary URLs or any wallet, signing, payment, retry, or action path?",
+  "startingState": "Session 7 shipped a polished read-only release evidence console at canary.0x402.sh on commit 8b3ef1f. The public surface only reads static health/release DTOs, all outbound capability flags are false, and the local feature branch contains one receipt-only commit beyond production.",
+  "boundedChange": "Add fixed-registry read-only Base source adapters, a sanitized network-status API and strict transaction-hash verification API, receipt-level native Base USDC EIP-3009 classification with cross-source agreement and finality, and an accessible interactive UI. Update health/release capability claims and containment tests truthfully. No caller-selected endpoint, historical block scan, wallet, signer, authorization creation, payment, transaction submission, retry/action execution, private journal/artifact exposure, Bankr mutation, duplicate Vercel project, or non-canonical deployment.",
+  "successCondition": "A user can enter a canonical Base transaction hash on the live canonical site and receive a bounded verified/pending/not-found/not-native-USDC/contradiction/unavailable result with source agreement, finality, block, parties, and human USDC amount when provable; the page shows current Base source health; malformed or extra input fails closed; browser/API tests pass; preview and canonical production are exact-commit verified.",
+  "failureCondition": "Any caller-controlled URL or RPC method is accepted; a single-source or contradictory observation is labeled verified; malformed receipts, non-Base chain data, removed logs, non-native USDC, or unfinalized data are overstated; private evidence or secrets are exposed; wallet/payment/signing/transaction/retry/action capability appears; public RPC failure crashes the page; a duplicate Vercel project is created or updated.",
+  "requiredReceipts": [
+    "Adversarial deterministic API and receipt-classification test matrix plus full repository gates",
+    "Live fixed-source Base conformance receipt showing chain identity, source agreement behavior, and bounded failure semantics",
+    "Desktop and mobile browser proof of network pulse, valid lookup, invalid lookup, unavailable handling, and clean console/network",
+    "Canonical preview and production deployment receipts at the exact reviewed commit; proof that x402-canary-v2 was not updated"
+  ],
+  "testCommands": [
+    "npm test",
+    "npm run typecheck",
+    "npm run build",
+    "git diff --check"
+  ],
+  "events": [
+    {
+      "type": "receipt",
+      "note": "Full deterministic suite and build pass",
+      "value": "321/321 tests; npm run build; node --check public/app.js; git diff --check",
+      "at": "2026-08-04T23:56:23.852Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Local live Base verifier confirmation",
+      "value": "0x0246829b14840ccd32eeb31476ea04f54a7c8d034ca4336d9b08f18a90b26ea7 -> confirmed, 0.019483 USDC, 2/2 sources",
+      "at": "2026-08-04T23:56:23.990Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Independent release QA pass",
+      "value": "desktop/mobile; idle/loading/result; light/dark; zero axe violations; concurrency 200/200",
+      "at": "2026-08-04T23:56:24.130Z"
+    },
+    {
+      "type": "decision",
+      "note": "Canonical-only release boundary",
+      "value": "Deploy x402-canary; disconnect x402-canary-v2 Git before any push; do not delete V2 history",
+      "at": "2026-08-04T23:56:24.267Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Canonical production deployment",
+      "value": "https://canary.0x402.sh/ · dpl_5myGBA1VL92zWSv1iDLWtzEB5kDv · git 99ca3511ae0080d67bacddd4caca57296dbfec2d",
+      "at": "2026-08-05T00:03:29.360Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Production verifier confirmation",
+      "value": "confirmed · 0.019483 USDC · 2/2 unanimous · CDN MISS then HIT with identical observation hash",
+      "at": "2026-08-05T00:03:29.509Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Production UX and containment",
+      "value": "desktop and 390px mobile contained; idle/result zero axe violations; health/evidence verified; invalid/cross-site/method requests fail closed",
+      "at": "2026-08-05T00:03:29.644Z"
+    },
+    {
+      "type": "receipt",
+      "note": "Vercel WAF guardrail",
+      "value": "rule_base_verifier_per_ip_limit_X1rnpX · exact path · 10 requests/60s/IP · 11th request returned 429",
+      "at": "2026-08-05T00:03:29.780Z"
+    },
+    {
+      "type": "receipt",
+      "note": "V2 isolation",
+      "value": "x402-canary-v2 Git link null; production deployment remains dpl_8JXAxMR7QbyqiuiPf6ZJmwbk2YBx",
+      "at": "2026-08-05T00:03:29.914Z"
+    },
+    {
+      "type": "decision",
+      "note": "Runtime warning classified non-blocking",
+      "value": "Production has zero 5xx/fatal logs; one DEP0169 warning accompanies successful RPC; local Node 24 trace reproduction emits no warning",
+      "at": "2026-08-05T00:03:30.052Z"
+    }
+  ],
+  "endedAt": "2026-08-05T00:03:35.459Z",
+  "close": {
+    "outcome": "passed",
+    "shipped": [
+      "Live read-only Base USDC transaction verifier at https://canary.0x402.sh/",
+      "Canonical Vercel WAF rate limit and V2 Git isolation"
+    ],
+    "verified": [
+      "321/321 tests, TypeScript build, JS syntax, and diff checks pass",
+      "Production known transaction confirms 0.019483 USDC with 2/2 sources",
+      "Production desktop/mobile, light/dark, loading/result, headers, cache, containment, and zero-violation accessibility checks pass"
+    ],
+    "unproven": [
+      "Configured HTTPS source agreement is not cryptographic Base consensus and public gateways are best-effort",
+      "Expected x402 intent, HTTP delivery, business effect, and retry safety remain outside this transaction-only verifier"
+    ],
+    "next": [
+      "Observe real WAF/provider behavior, then scope a separate read-only intent-matching case layer if useful"
+    ],
+    "tests": [],
+    "git": {
+      "isRepository": true,
+      "root": "/Users/tjb/code/x402-canary",
+      "branch": "feat/base-evidence-kernel",
+      "head": "99ca3511ae0080d67bacddd4caca57296dbfec2d",
+      "status": [
+        "?? .builder-workflows/active-session.json",
+        "?? .builder-workflows/session-008-confirmed.png",
+        "?? .builder-workflows/session-008-desktop-fixed.png",
+        "?? .builder-workflows/session-008-desktop.png",
+        "?? .builder-workflows/session-008-loading-mobile.png",
+        "?? .builder-workflows/session-008-mobile-contained.png",
+        "?? .builder-workflows/session-008-mobile-top.png",
+        "?? .builder-workflows/session-008-mobile.png",
+        "?? .builder-workflows/session-008-production-confirmed.png",
+        "?? .builder-workflows/session-008-production-desktop.png",
+        "?? .builder-workflows/session-008-production-mobile.png"
+      ],
+      "commits": [
+        "99ca351 feat: add live Base transaction verifier"
+      ],
+      "diffStat": "CLAUDE.md                                     |  12 +-\n README.md                                     |  41 +-\n api/base-transaction.ts                       | 211 +++++++\n api/health.ts                                 |  12 +-\n docs/public-base-verifier-v0.1.md             |  63 +++\n package.json                                  |   2 +-\n public/app.js                                 | 700 ++++++++++++++++++++++-\n public/index.html                             | 209 +++++--\n public/llms.txt                               | 305 ++++++----\n public/og-live-verifier.png                   | Bin 0 -> 1150520 bytes\n public/styles.css                             | 638 ++++++++++++++++++---\n src/__tests__/base-rpc.test.ts                |  32 ++\n src/__tests__/base-transaction.test.ts        | 461 +++++++++++++++\n src/__tests__/production-surface.test.ts      |  45 +-\n src/__tests__/public-base-transaction.test.ts | 552 ++++++++++++++++++\n src/__tests__/public-containment.test.ts      |  55 +-\n src/__tests__/public-evidence-status.test.ts  |  27 +-\n src/dashboard.ts                              | 148 ++++-\n src/evidence/base-rpc.ts                      |  56 +-\n src/evidence/base-transaction.ts              | 776 ++++++++++++++++++++++++++\n src/index.ts                                  |   4 +-\n src/public-base-transaction-config.ts         |  99 ++++\n src/public-base-transaction.ts                | 262 +++++++++\n src/public-evidence-status.ts                 |  36 +-\n src/public-health.ts                          |  26 +\n vercel.json                                   |   5 +\n 26 files changed, 4459 insertions(+), 318 deletions(-)"
+    }
+  }
+}

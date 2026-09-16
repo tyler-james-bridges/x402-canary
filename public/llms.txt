@@ -1,31 +1,108 @@
-# x402 Canary Live Base Transaction Verifier
+# x402 Canary Intent-Aware Base Settlement Verifier
 
 Canonical URL: https://canary.0x402.sh/
 Network: Base mainnet (`eip155:8453`)
 Asset: native Base USDC (`0x833589fcd6edb6e08f4c7c32d4f71b54bda02913`, 6 decimals)
-Evidence core commit: `3ead8680d764ecbafe0739865f3789f8928f0fa6`
+Release metadata and deployed commit: `GET /api/evidence-status`
 
-x402 Canary performs an on-demand, transaction-only observation through two
-server-pinned, read-only Base RPC origins. A caller supplies a public transaction
-hash, never an RPC endpoint, wallet, signature, authorization, operation URL, or
-payment instruction.
+x402 Canary performs an on-demand, read-only comparison of one strict x402 v2
+`PaymentRequirements` object with one Base transaction observation from two
+server-pinned RPC origins. The primary request supplies a public transaction hash
+and caller-declared settlement requirements, never an RPC endpoint, wallet,
+signature, authorization, operation URL, payment header, or execution instruction.
 
-The live result verifies bounded public receipt and native-USDC EIP-3009 log facts.
-It does not prove intended x402 terms, HTTP delivery, business effect, retry safety,
-provider consensus truth, or external reality.
+`settlement_terms_matched` means exactly one untruncated finalized native-USDC
+EIP-3009 event pair was observed under unanimous configured-source policy and its
+recipient and atomic amount matched the supported declaration. It does not prove
+that an x402 v2 wire exchange occurred, the declaration's issuer, resource binding,
+expected payer or nonce, authorization
+window or signature, timeout compliance, HTTP delivery, business effect, duplicate
+purchase, retry safety, provider consensus truth, or external reality.
 
-## Live transaction route
+## Live requirement route
 
-### GET /api/base-transaction?transactionHash=0x<64-lowercase-hex>
+### POST /api/x402-intent
 
-This route is strict GET-only; HEAD and OPTIONS return HTTP 405. The query must
+The request must use `Content-Type: application/json`, have no query string, and
+contain exactly `x402Version`, `transactionHash`, and `paymentRequirements`.
+Browser calls must be same-origin. The normalized canonical JSON body is limited
+to 6,144 bytes. The local server reads at most 8,192 raw bytes; the Vercel function
+rejects a declared `Content-Length` above 8,192 bytes and otherwise uses the
+platform request limit. Unsupported semantic input fails before an RPC runtime is
+constructed.
+
+The supported requirement is exactly:
+
+```json
+{
+  "x402Version": 2,
+  "transactionHash": "0x<64-hex-characters>",
+  "paymentRequirements": {
+    "scheme": "exact",
+    "network": "eip155:8453",
+    "amount": "<positive-canonical-uint256-decimal-string>",
+    "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "payTo": "0x<nonzero-40-hex-address>",
+    "maxTimeoutSeconds": 300,
+    "extra": {
+      "assetTransferMethod": "eip3009",
+      "name": "USD Coin",
+      "version": "2"
+    }
+  }
+}
+```
+
+`maxTimeoutSeconds` must be a positive safe integer no greater than 86,400.
+`assetTransferMethod` may be omitted and is then normalized to `eip3009`. No
+other scheme, network, asset, token domain, transfer method, or field is accepted.
+The transaction hash is necessarily used for fixed-source Base reads; the
+`PaymentRequirements` object is evaluated locally and is not sent to RPC providers.
+
+HTTP 200 reports have schema `0.2`, kind
+`public_x402_requirement_verification`, and one of:
+
+- `settlement_terms_matched`
+- `settlement_terms_mismatch`
+- `pending_finality`
+- `not_observed`
+- `multiple_payments_observed`
+- `contradiction`
+
+The report includes `checkedAt`, the canonical transaction hash, `intentHash`,
+`caseId`, `reportHash`, normalized intent, field comparisons, one observed payment
+or `null`, a sanitized lower-level Base summary, reason codes, assurance,
+capabilities, privacy facts, and explicit limitations. Amounts remain atomic
+decimal strings. `from` and `nonce` are observed facts only; they are not expected
+values established by the declaration. `maxTimeoutSeconds` is always
+`declared_only`.
+
+`intentHash`, `caseId`, and `reportHash` are domain-separated, unsigned content
+identities. They are not signatures, external attestations, or action authority.
+A fresh observation can produce a new report hash.
+
+Only `settlement_terms_matched` is a positive bounded match. A machine client must
+treat every other status, unrecognized schema/value, HTTP error, parse error,
+timeout, or unavailable response as no match. It must not use a match alone to
+pay, replay, retry, submit a transaction, execute an operation, or infer delivery.
+
+The POST response is `Cache-Control: no-store`. The application does not persist
+inputs or reports. Requirements stay out of the URL, but platform infrastructure
+may still log request metadata or bodies. Do not submit secrets.
+
+## Lower-level transaction route
+
+### GET /api/base-transaction?transactionHash=0x<64-hex-characters>
+
+This route does not evaluate a caller-declared requirement. It is strict GET-only;
+HEAD and OPTIONS return HTTP 405. The query must
 contain exactly one `transactionHash` field. The value must be
-`0x` followed by exactly 64 lowercase hexadecimal characters. Duplicate fields,
-array values, extra fields, whitespace, a request body, and caller-selected RPC
-configuration are rejected.
+`0x` followed by exactly 64 hexadecimal characters and is normalized to lowercase.
+Duplicate fields, array values, extra fields, whitespace, a request body, and
+caller-selected RPC configuration are rejected.
 
-The browser calls this same-origin route only after local shape validation. It
-does not automatically retry or poll.
+Clients call this same-origin route only when they need the lower-level observation.
+It does not automatically retry or poll.
 
 Successful evidence classifications return HTTP 200 with exactly these top-level
 fields:
@@ -190,7 +267,7 @@ Returns the fixed live, read-only operating configuration. It performs no Base
 read for the health request itself. The response reports:
 
 - service `x402-canary` and status `operational_read_only`;
-- mode `live_base_transaction_verification`;
+- active intent-aware requirement comparison over the fixed Base observer;
 - Base mainnet, native USDC, two configured sources, unanimous policy, and shared
   finalized-anchor policy;
 - legacy probe routes disabled and scheduled monitoring disabled;
@@ -204,21 +281,20 @@ Returns sanitized release metadata generated by the deployed source. It does not
 read a private journal, artifact store, manifest, attestation, wallet, or RPC
 endpoint. The live-verifier contract in this response pins:
 
-- schema `0.1` and scope `transaction_only`;
+- the public intent-report schema and lower-level transaction schema;
 - Base mainnet and native Base USDC;
 - two configured sources with unanimous policy;
 - shared-finalized-anchor finality;
 - caller-selected RPC disabled;
-- caller-selected transaction-hash lookup and fixed-source Base verification
-  enabled;
+- strict caller-declared requirement comparison, caller-selected transaction-hash
+  lookup, and fixed-source Base verification enabled;
 - scheduled public outbound monitoring disabled;
 - every execution capability disabled.
 
-The release also describes the four bounded evidence layers and nine deterministic
-shadow-runner classifications from core commit
-`3ead8680d764ecbafe0739865f3789f8928f0fa6`. Those classifications remain evidence
-method documentation; the public transaction route does not evaluate an expected
-x402 intent or business effect.
+The release also describes bounded private evidence layers and deterministic
+shadow-runner classifications. Those classifications remain evidence-method
+documentation; neither public route evaluates an HTTP delivery, business effect,
+or retry directive.
 
 ## Disabled routes
 

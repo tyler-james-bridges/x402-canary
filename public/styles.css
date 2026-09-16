@@ -110,7 +110,8 @@ button {
   font: inherit;
 }
 
-input {
+input,
+textarea {
   min-width: 0;
   font: inherit;
 }
@@ -131,6 +132,10 @@ code,
 .verify-form label,
 .verifier-locks,
 .settlement-heading span,
+.field-label-row span,
+.intent-preview span,
+.comparison-card,
+.observed-payment,
 .limit-value {
   font-family: var(--mono);
 }
@@ -343,9 +348,9 @@ main {
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(370px, 0.92fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
   gap: clamp(34px, 5vw, 70px);
-  align-items: center;
+  align-items: start;
   min-height: min(720px, calc(100vh - 72px));
   padding: clamp(66px, 8vw, 108px) 0 72px;
 }
@@ -425,8 +430,8 @@ main {
 }
 
 .verify-form label {
-  display: block;
-  margin-bottom: 9px;
+  display: inline;
+  margin: 0;
   color: var(--ink);
   font-size: 10px;
   font-weight: 750;
@@ -434,16 +439,38 @@ main {
   text-transform: uppercase;
 }
 
-.verify-control {
+.case-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-.verify-control input {
+.form-field {
+  min-width: 0;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.field-label-row span {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.form-field input,
+.form-field textarea {
   width: 100%;
-  min-height: 58px;
-  padding: 0 16px;
   border: 1px solid var(--rule-strong);
   border-radius: 11px;
   outline: none;
@@ -451,29 +478,53 @@ main {
   color: var(--ink);
   font-family: var(--mono);
   font-size: 14px;
+  line-height: 1.5;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.verify-control input::placeholder {
-  color: var(--faint);
+.form-field input {
+  min-height: 56px;
+  padding: 0 16px;
 }
 
-.verify-control input:hover {
+.form-field textarea {
+  min-height: 210px;
+  padding: 14px 16px;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+  color: var(--muted);
+}
+
+.form-field input:hover,
+.form-field textarea:hover {
   border-color: color-mix(in srgb, var(--signal) 52%, var(--rule-strong));
 }
 
-.verify-control input:focus-visible {
+.form-field input:focus-visible,
+.form-field textarea:focus-visible {
   border-color: var(--cobalt);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--cobalt) 14%, transparent);
   outline: 0;
 }
 
-.verify-control input[aria-invalid="true"] {
+.form-field input[aria-invalid="true"],
+.form-field textarea[aria-invalid="true"] {
   border-color: var(--warning);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 12%, transparent);
 }
 
-.verify-control button,
+.form-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions button,
 .secondary-action {
   min-height: 48px;
   border: 1px solid transparent;
@@ -483,30 +534,36 @@ main {
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.verify-control button {
+.form-actions #verify-button {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-width: 170px;
+  min-width: 190px;
   padding: 0 20px;
   background: var(--signal);
   color: var(--surface-solid);
 }
 
-:root[data-theme="dark"] .verify-control button {
+:root[data-theme="dark"] .form-actions #verify-button {
   color: var(--page-deep);
 }
 
-.verify-control button:hover:not(:disabled) {
+.form-actions #verify-button:hover:not(:disabled) {
   background: var(--signal-bright);
   transform: translateY(-1px);
 }
 
-.verify-control button:disabled {
+.form-actions button:disabled {
   cursor: wait;
   opacity: 0.78;
+}
+
+.form-actions .secondary-action {
+  width: auto;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .button-progress {
@@ -538,6 +595,36 @@ main {
 .field-error {
   color: var(--warning);
   font-weight: 700;
+}
+
+.intent-preview {
+  display: grid;
+  gap: 3px;
+  margin-top: 16px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--signal) 28%, var(--rule));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--signal-soft) 55%, transparent);
+}
+
+.intent-preview span {
+  color: var(--signal);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.intent-preview strong {
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.form-boundary {
+  margin: 14px 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .verifier-locks {
@@ -588,17 +675,16 @@ main {
   content: "";
 }
 
-.verifier-panel[data-state="multiple"]::before,
+.verifier-panel[data-state="multiple_payments_observed"]::before,
 .verifier-panel[data-state="pending_finality"]::before {
   background: linear-gradient(90deg, transparent, var(--amber), transparent);
 }
 
-.verifier-panel[data-state="not_observed"]::before,
-.verifier-panel[data-state="not_eip3009_usdc"]::before {
+.verifier-panel[data-state="not_observed"]::before {
   background: linear-gradient(90deg, transparent, var(--cobalt), transparent);
 }
 
-.verifier-panel[data-state="reverted"]::before,
+.verifier-panel[data-state="settlement_terms_mismatch"]::before,
 .verifier-panel[data-state="contradiction"]::before,
 .verifier-panel[data-state="error"]::before {
   background: linear-gradient(90deg, transparent, var(--warning), transparent);
@@ -627,20 +713,20 @@ main {
   text-transform: uppercase;
 }
 
-.verdict-chip[data-verdict="confirmed"] {
+.verdict-chip[data-verdict="settlement_terms_matched"] {
   border-color: color-mix(in srgb, var(--signal) 38%, transparent);
   background: var(--signal-soft);
   color: var(--signal);
 }
 
-.verdict-chip[data-verdict="multiple"],
+.verdict-chip[data-verdict="multiple_payments_observed"],
 .verdict-chip[data-verdict="pending_finality"] {
   border-color: color-mix(in srgb, var(--amber) 38%, transparent);
   background: var(--amber-soft);
   color: var(--amber);
 }
 
-.verdict-chip[data-verdict="reverted"],
+.verdict-chip[data-verdict="settlement_terms_mismatch"],
 .verdict-chip[data-verdict="contradiction"],
 .verdict-chip[data-verdict="error"] {
   border-color: color-mix(in srgb, var(--warning) 38%, transparent);
@@ -648,8 +734,7 @@ main {
   color: var(--warning);
 }
 
-.verdict-chip[data-verdict="not_observed"],
-.verdict-chip[data-verdict="not_eip3009_usdc"] {
+.verdict-chip[data-verdict="not_observed"] {
   border-color: color-mix(in srgb, var(--cobalt) 30%, transparent);
   background: var(--cobalt-soft);
   color: var(--cobalt);
@@ -812,6 +897,7 @@ main {
   text-align: right;
 }
 
+.comparison-section,
 .settlement-section {
   margin-top: 24px;
 }
@@ -838,6 +924,108 @@ main {
   font-size: 9px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.comparison-list {
+  display: grid;
+  gap: 9px;
+}
+
+.comparison-card {
+  padding: 13px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+}
+
+.comparison-card[data-status="matched"] {
+  border-color: color-mix(in srgb, var(--signal) 28%, var(--rule));
+}
+
+.comparison-card[data-status="mismatched"] {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--rule));
+  background: color-mix(in srgb, var(--warning-soft) 38%, var(--surface-solid));
+}
+
+.comparison-card[data-status="declared_only"],
+.comparison-card[data-status="not_evaluated"] {
+  border-color: color-mix(in srgb, var(--cobalt) 28%, var(--rule));
+}
+
+.comparison-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.comparison-card-head strong,
+.comparison-card-head span {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.comparison-card-head span {
+  color: var(--muted);
+  font-weight: 760;
+}
+
+.comparison-card[data-status="matched"] .comparison-card-head span {
+  color: var(--signal);
+}
+
+.comparison-card[data-status="mismatched"] .comparison-card-head span {
+  color: var(--warning);
+}
+
+.comparison-card[data-status="declared_only"] .comparison-card-head span,
+.comparison-card[data-status="not_evaluated"] .comparison-card-head span {
+  color: var(--cobalt);
+}
+
+.comparison-card dl,
+.observed-payment {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 0;
+}
+
+.comparison-card dl > div,
+.observed-payment > div {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.comparison-card dt,
+.comparison-card dd,
+.observed-payment dt,
+.observed-payment dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 10px;
+}
+
+.comparison-card dt,
+.observed-payment dt {
+  color: var(--muted);
+}
+
+.comparison-card dd,
+.observed-payment dd {
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.observed-payment {
+  padding: 13px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
 }
 
 .settlement-list {
@@ -936,6 +1124,20 @@ main {
   border-color: var(--signal);
   color: var(--signal);
   transform: translateY(-1px);
+}
+
+.report-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.report-actions .secondary-action {
+  width: auto;
+  margin: 0;
+  padding-inline: 11px;
+  font-size: 11px;
 }
 
 .error-mark {
@@ -1505,12 +1707,29 @@ tbody td code {
     font-size: clamp(44px, 14vw, 72px);
   }
 
-  .verify-control {
+  .form-actions {
     grid-template-columns: 1fr;
   }
 
-  .verify-control button {
+  .form-actions #verify-button,
+  .form-actions .secondary-action {
+    width: 100%;
     min-height: 54px;
+  }
+
+  .form-field input,
+  .form-field textarea {
+    font-size: 16px;
+  }
+
+  .field-label-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .field-label-row span {
+    text-align: left;
   }
 
   .verifier-locks {
@@ -1528,6 +1747,19 @@ tbody td code {
 
   .settlement-card dl div {
     grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .comparison-card dl > div,
+  .observed-payment > div {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  .report-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .report-actions .secondary-action {
+    min-height: 48px;
   }
 
   .section-heading {
@@ -1584,6 +1816,25 @@ tbody td code {
   }
 
   .site-footer p {
+    text-align: left;
+  }
+}
+
+@media (max-width: 420px) {
+  .verifier-locks {
+    grid-template-columns: 1fr;
+  }
+
+  .result-facts > div,
+  .comparison-card dl > div,
+  .observed-payment > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .result-facts dd,
+  .comparison-card dd,
+  .observed-payment dd {
     text-align: left;
   }
 }

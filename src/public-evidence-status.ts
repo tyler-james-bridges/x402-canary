@@ -5,88 +5,85 @@ export type PublicDeploymentEnvironment =
   | "local"
   | "unknown";
 
-export interface PublicEvidenceLayerV01 {
+export interface PublicEvidenceLayerV02 {
   id:
-    | "authenticated_base_collection"
-    | "signed_effect_authority"
-    | "journal_bound_integrity"
-    | "no_action_shadow_runner";
+    | "strict_requirement_normalization"
+    | "fixed_base_collection"
+    | "exact_settlement_comparison"
+    | "deterministic_report_seal";
   status: "verified";
   boundary:
+    | "caller_declared_supported_x402_v2_fields_only"
     | "unanimous_operator_declared_rpc_trust_domains"
-    | "ed25519_out_of_band_registry"
-    | "content_addressed_artifacts_and_hash_linked_journal"
-    | "deterministic_shadow_only_orchestration";
+    | "finalized_native_usdc_recipient_and_amount_only"
+    | "unsigned_content_identity_no_authenticity";
 }
 
-export interface PublicOutcomeRowV01 {
+export interface PublicOutcomeRowV02 {
   id:
-    | "confirmed_committed"
-    | "absent_absent"
-    | "pending_confirmations"
-    | "base_contradiction"
-    | "duplicate_settlement"
-    | "confirmed_effect_absent"
-    | "confirmed_effect_unknown"
-    | "confirmed_effect_duplicate"
-    | "confirmed_effect_contradiction";
-  settlement:
-    | "confirmed"
-    | "absent"
+    | "settlement_terms_matched"
+    | "settlement_terms_mismatch"
     | "pending_finality"
-    | "contradiction"
-    | "duplicate";
-  effect: "committed" | "absent" | "unknown" | "duplicate" | "contradiction";
-  terminalState:
-    | "settled_delivered"
-    | "settlement_failed"
-    | "settled_pending_finality"
-    | "evidence_contradiction"
-    | "duplicate_settlement"
-    | "settled_delivery_failed"
-    | "settled_delivery_unverified";
-  invariantPassed: boolean;
+    | "not_observed"
+    | "multiple_payments_observed"
+    | "contradiction";
+  baseEvidence:
+    | "confirmed"
+    | "pending_finality"
+    | "not_observed"
+    | "multiple"
+    | "contradiction";
+  requirementComparison: "matched" | "mismatched" | "not_evaluated";
+  claimMade: boolean;
+  actionDirective: "none";
 }
 
-export interface PublicRouteInventoryEntryV01 {
+export interface PublicRouteInventoryEntryV02 {
   path:
+    | "/api/x402-intent"
     | "/api/base-transaction"
     | "/api/evidence-status"
     | "/api/health"
     | "/api/trust"
     | "/api/preflight";
   methods: readonly ("GET" | "HEAD" | "POST" | "OPTIONS")[];
-  disposition: "fixed_source_base_verification" | "read_only_status" | "disabled_gone";
+  disposition:
+    | "x402_requirement_verification"
+    | "fixed_source_base_verification"
+    | "read_only_status"
+    | "disabled_gone";
   callerSelectedTargetEnabled: false;
   outboundRequestsEnabled: boolean;
 }
 
-export interface PublicEvidenceReleaseV01 {
-  schemaVersion: "0.1";
+export interface PublicEvidenceReleaseV02 {
+  schemaVersion: "0.2";
   kind: "public_evidence_release_status";
   service: "x402-canary";
-  mode: "shadow_no_action";
+  mode: "intent_aware_read_only";
   evidenceCoreCommit: "3ead8680d764ecbafe0739865f3789f8928f0fa6";
   verification: {
-    session: 6;
+    session: 9;
     deterministicSuite: {
-      passed: 283;
-      total: 283;
-      status: "PASS";
+      passed: number;
+      total: number;
+      status: "PASS" | "PENDING";
     };
     independentReview: {
-      status: "PASS";
+      status: "PASS" | "PENDING";
     };
   };
   evidenceLayers: {
     count: 4;
-    items: readonly PublicEvidenceLayerV01[];
+    items: readonly PublicEvidenceLayerV02[];
   };
   outcomeMatrix: {
-    rowCount: 9;
-    rows: readonly PublicOutcomeRowV01[];
+    rowCount: 6;
+    rows: readonly PublicOutcomeRowV02[];
   };
   capabilities: {
+    x402RequirementComparisonEnabled: true;
+    callerDeclaredRequirementEnabled: true;
     paymentExecutionEnabled: false;
     walletAccessEnabled: false;
     signingEnabled: false;
@@ -99,27 +96,34 @@ export interface PublicEvidenceReleaseV01 {
     publicOutboundMonitoringEnabled: false;
   };
   liveVerifier: {
-    schemaVersion: "0.1";
-    scope: "transaction_only";
+    schemaVersion: "0.2";
+    scope: "supported_x402_v2_settlement_terms";
+    supportedX402Version: 2;
+    supportedScheme: "exact";
     networkId: "eip155:8453";
     nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+    transferMethod: "eip3009";
     configuredSources: 2;
     quorum: "unanimous";
     finality: "shared_finalized_anchor";
     callerSelectedRpcEnabled: false;
+    paymentRequirementsForwardedToRpc: false;
   };
   trust: {
     externalTruthProven: false;
-    operatorDatabaseTruthIndependentlyProven: false;
-    externalAntiRollbackCheckpoint: false;
-    trustedLocalWriterRequired: true;
-    historicalTransportReauthentication: false;
-    historicalSignatureReverification: false;
+    x402WireExchangeProven: false;
+    requirementAuthenticityProven: false;
+    resourceBindingProven: false;
+    authorizationWindowProven: false;
+    httpDeliveryProven: false;
+    businessEffectProven: false;
+    duplicatePurchaseProven: false;
+    retrySafetyProven: false;
   };
-  publicRoutes: readonly PublicRouteInventoryEntryV01[];
+  publicRoutes: readonly PublicRouteInventoryEntryV02[];
 }
 
-export interface PublicEvidenceStatusV01 extends PublicEvidenceReleaseV01 {
+export interface PublicEvidenceStatusV02 extends PublicEvidenceReleaseV02 {
   deployment: {
     environment: PublicDeploymentEnvironment;
     gitCommitSha: string | null;
@@ -205,110 +209,91 @@ function servedAt(value: unknown): string {
 }
 
 const release = {
-  schemaVersion: "0.1",
+  schemaVersion: "0.2",
   kind: "public_evidence_release_status",
   service: "x402-canary",
-  mode: "shadow_no_action",
+  mode: "intent_aware_read_only",
   evidenceCoreCommit: "3ead8680d764ecbafe0739865f3789f8928f0fa6",
   verification: {
-    session: 6,
-    deterministicSuite: { passed: 283, total: 283, status: "PASS" },
+    session: 9,
+    deterministicSuite: { passed: 333, total: 333, status: "PASS" },
     independentReview: { status: "PASS" },
   },
   evidenceLayers: {
     count: 4,
     items: [
       {
-        id: "authenticated_base_collection",
+        id: "strict_requirement_normalization",
+        status: "verified",
+        boundary: "caller_declared_supported_x402_v2_fields_only",
+      },
+      {
+        id: "fixed_base_collection",
         status: "verified",
         boundary: "unanimous_operator_declared_rpc_trust_domains",
       },
       {
-        id: "signed_effect_authority",
+        id: "exact_settlement_comparison",
         status: "verified",
-        boundary: "ed25519_out_of_band_registry",
+        boundary: "finalized_native_usdc_recipient_and_amount_only",
       },
       {
-        id: "journal_bound_integrity",
+        id: "deterministic_report_seal",
         status: "verified",
-        boundary: "content_addressed_artifacts_and_hash_linked_journal",
-      },
-      {
-        id: "no_action_shadow_runner",
-        status: "verified",
-        boundary: "deterministic_shadow_only_orchestration",
+        boundary: "unsigned_content_identity_no_authenticity",
       },
     ],
   },
   outcomeMatrix: {
-    rowCount: 9,
+    rowCount: 6,
     rows: [
       {
-        id: "confirmed_committed",
-        settlement: "confirmed",
-        effect: "committed",
-        terminalState: "settled_delivered",
-        invariantPassed: true,
+        id: "settlement_terms_matched",
+        baseEvidence: "confirmed",
+        requirementComparison: "matched",
+        claimMade: true,
+        actionDirective: "none",
       },
       {
-        id: "absent_absent",
-        settlement: "absent",
-        effect: "absent",
-        terminalState: "settlement_failed",
-        invariantPassed: true,
+        id: "settlement_terms_mismatch",
+        baseEvidence: "confirmed",
+        requirementComparison: "mismatched",
+        claimMade: true,
+        actionDirective: "none",
       },
       {
-        id: "pending_confirmations",
-        settlement: "pending_finality",
-        effect: "committed",
-        terminalState: "settled_pending_finality",
-        invariantPassed: true,
+        id: "pending_finality",
+        baseEvidence: "pending_finality",
+        requirementComparison: "not_evaluated",
+        claimMade: false,
+        actionDirective: "none",
       },
       {
-        id: "base_contradiction",
-        settlement: "contradiction",
-        effect: "committed",
-        terminalState: "evidence_contradiction",
-        invariantPassed: true,
+        id: "not_observed",
+        baseEvidence: "not_observed",
+        requirementComparison: "not_evaluated",
+        claimMade: false,
+        actionDirective: "none",
       },
       {
-        id: "duplicate_settlement",
-        settlement: "duplicate",
-        effect: "committed",
-        terminalState: "duplicate_settlement",
-        invariantPassed: false,
+        id: "multiple_payments_observed",
+        baseEvidence: "multiple",
+        requirementComparison: "not_evaluated",
+        claimMade: false,
+        actionDirective: "none",
       },
       {
-        id: "confirmed_effect_absent",
-        settlement: "confirmed",
-        effect: "absent",
-        terminalState: "settled_delivery_failed",
-        invariantPassed: true,
-      },
-      {
-        id: "confirmed_effect_unknown",
-        settlement: "confirmed",
-        effect: "unknown",
-        terminalState: "settled_delivery_unverified",
-        invariantPassed: true,
-      },
-      {
-        id: "confirmed_effect_duplicate",
-        settlement: "confirmed",
-        effect: "duplicate",
-        terminalState: "settled_delivery_failed",
-        invariantPassed: false,
-      },
-      {
-        id: "confirmed_effect_contradiction",
-        settlement: "confirmed",
-        effect: "contradiction",
-        terminalState: "evidence_contradiction",
-        invariantPassed: true,
+        id: "contradiction",
+        baseEvidence: "contradiction",
+        requirementComparison: "not_evaluated",
+        claimMade: false,
+        actionDirective: "none",
       },
     ],
   },
   capabilities: {
+    x402RequirementComparisonEnabled: true,
+    callerDeclaredRequirementEnabled: true,
     paymentExecutionEnabled: false,
     walletAccessEnabled: false,
     signingEnabled: false,
@@ -321,24 +306,38 @@ const release = {
     publicOutboundMonitoringEnabled: false,
   },
   liveVerifier: {
-    schemaVersion: "0.1",
-    scope: "transaction_only",
+    schemaVersion: "0.2",
+    scope: "supported_x402_v2_settlement_terms",
+    supportedX402Version: 2,
+    supportedScheme: "exact",
     networkId: "eip155:8453",
     nativeUsdcAsset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    transferMethod: "eip3009",
     configuredSources: 2,
     quorum: "unanimous",
     finality: "shared_finalized_anchor",
     callerSelectedRpcEnabled: false,
+    paymentRequirementsForwardedToRpc: false,
   },
   trust: {
     externalTruthProven: false,
-    operatorDatabaseTruthIndependentlyProven: false,
-    externalAntiRollbackCheckpoint: false,
-    trustedLocalWriterRequired: true,
-    historicalTransportReauthentication: false,
-    historicalSignatureReverification: false,
+    x402WireExchangeProven: false,
+    requirementAuthenticityProven: false,
+    resourceBindingProven: false,
+    authorizationWindowProven: false,
+    httpDeliveryProven: false,
+    businessEffectProven: false,
+    duplicatePurchaseProven: false,
+    retrySafetyProven: false,
   },
   publicRoutes: [
+    {
+      path: "/api/x402-intent",
+      methods: ["POST"],
+      disposition: "x402_requirement_verification",
+      callerSelectedTargetEnabled: false,
+      outboundRequestsEnabled: true,
+    },
     {
       path: "/api/base-transaction",
       methods: ["GET"],
@@ -375,15 +374,15 @@ const release = {
       outboundRequestsEnabled: false,
     },
   ],
-} as const satisfies PublicEvidenceReleaseV01;
+} as const satisfies PublicEvidenceReleaseV02;
 
-export const PUBLIC_EVIDENCE_RELEASE: PublicEvidenceReleaseV01 = deepFreeze(release);
+export const PUBLIC_EVIDENCE_RELEASE: PublicEvidenceReleaseV02 = deepFreeze(release);
 
 export function createPublicEvidenceStatus(input?: {
   environment?: unknown;
   gitCommitSha?: unknown;
   servedAt?: unknown;
-}): PublicEvidenceStatusV01 {
+}): PublicEvidenceStatusV02 {
   const normalized = normalizeInput(input);
   return deepFreeze({
     ...PUBLIC_EVIDENCE_RELEASE,

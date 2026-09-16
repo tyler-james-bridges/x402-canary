@@ -86,7 +86,7 @@ function localRequest(
   });
 }
 
-test("all public handlers except the fixed-source verifier remain zero-outbound", async () => {
+test("all public handlers except the fixed-source verifiers remain zero-outbound", async () => {
   const originalFetch = globalThis.fetch;
   let outboundRequests = 0;
   globalThis.fetch = (async () => {
@@ -99,10 +99,17 @@ test("all public handlers except the fixed-source verifier remain zero-outbound"
     healthHandler(request("GET"), health.res);
     assert.equal(health.state.statusCode, 200);
     assert.deepEqual(health.state.body, {
-      schemaVersion: "0.1",
+      schemaVersion: "0.2",
       service: "x402-canary",
       status: "operational_read_only",
-      mode: "live_base_transaction_verification",
+      mode: "live_x402_requirement_verification",
+      intentAwareRequirementVerification: {
+        enabled: true,
+        schemaVersion: "0.2",
+        scope: "supported_x402_v2_settlement_terms",
+        requirementTransport: "request_body",
+        paymentRequirementsForwardedToRpc: false,
+      },
       fixedSourceBaseVerification: {
         enabled: true,
         networkId: "eip155:8453",
@@ -130,12 +137,14 @@ test("all public handlers except the fixed-source verifier remain zero-outbound"
     assert.equal(evidenceStatus.state.statusCode, 200);
     assert.equal(
       (evidenceStatus.state.body as { mode: string }).mode,
-      "shadow_no_action",
+      "intent_aware_read_only",
     );
     assert.deepEqual(
       (evidenceStatus.state.body as { capabilities: Record<string, boolean> })
         .capabilities,
       {
+        x402RequirementComparisonEnabled: true,
+        callerDeclaredRequirementEnabled: true,
         paymentExecutionEnabled: false,
         walletAccessEnabled: false,
         signingEnabled: false,
@@ -229,7 +238,7 @@ test("the local start path binds loopback and cannot revive outbound probes", as
       "GET",
     );
     assert.equal(evidenceStatus.status, 200);
-    assert.equal(JSON.parse(evidenceStatus.body).mode, "shadow_no_action");
+    assert.equal(JSON.parse(evidenceStatus.body).mode, "intent_aware_read_only");
     assert.equal(
       JSON.parse(evidenceStatus.body).capabilities.actionExecutionEnabled,
       false,
@@ -263,6 +272,74 @@ test("the local start path binds loopback and cannot revive outbound probes", as
       "INVALID_REQUEST",
     );
     assert.equal(rejectedVerifierInput.headers["access-control-allow-origin"], undefined);
+
+    const intentRequest = JSON.stringify({
+      x402Version: 2,
+      transactionHash: `0x${"a".repeat(64)}`,
+      paymentRequirements: {
+        scheme: "exact",
+        network: "eip155:8453",
+        amount: "19483",
+        asset: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        payTo: `0x${"e".repeat(40)}`,
+        maxTimeoutSeconds: 300,
+        extra: {
+          assetTransferMethod: "eip3009",
+          name: "USD Coin",
+          version: "2",
+        },
+      },
+    });
+    const rejectedIntentQuery = await localRequest(
+      address.port,
+      "/api/x402-intent?rpcUrl=http://127.0.0.1",
+      "POST",
+      intentRequest,
+    );
+    assert.equal(rejectedIntentQuery.status, 400);
+    assert.equal(
+      JSON.parse(rejectedIntentQuery.body).error.reason,
+      "REQUEST_URL_INVALID",
+    );
+    assert.equal(rejectedIntentQuery.headers["access-control-allow-origin"], undefined);
+
+    const requestWithTarget = JSON.parse(intentRequest) as Record<string, unknown>;
+    requestWithTarget.target = "http://169.254.169.254/latest/meta-data";
+    const rejectedIntentTarget = await localRequest(
+      address.port,
+      "/api/x402-intent",
+      "POST",
+      JSON.stringify(requestWithTarget),
+    );
+    assert.equal(rejectedIntentTarget.status, 400);
+    assert.equal(
+      JSON.parse(rejectedIntentTarget.body).error.reason,
+      "REQUEST_BODY_FIELDS_INVALID",
+    );
+
+    const rejectedIntentMethod = await localRequest(
+      address.port,
+      "/api/x402-intent",
+      "GET",
+    );
+    assert.equal(rejectedIntentMethod.status, 405);
+    assert.equal(rejectedIntentMethod.headers.allow, "POST");
+    assert.equal(
+      JSON.parse(rejectedIntentMethod.body).error.code,
+      "METHOD_NOT_ALLOWED",
+    );
+
+    const rejectedOversizedIntent = await localRequest(
+      address.port,
+      "/api/x402-intent",
+      "POST",
+      JSON.stringify({ padding: "x".repeat(9_000) }),
+    );
+    assert.equal(rejectedOversizedIntent.status, 413);
+    assert.equal(
+      JSON.parse(rejectedOversizedIntent.body).error.reason,
+      "REQUEST_BODY_TOO_LARGE",
+    );
 
     for (const assetRoute of [
       "/",
