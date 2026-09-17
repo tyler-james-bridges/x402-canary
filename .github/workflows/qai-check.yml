@@ -1,0 +1,23 @@
+name: qai-check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  qai-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install qai-cli
+        run: npm i -g qai-cli@3.4.0 || npm i -g github:tyler-james-bridges/qai-cli#main
+
+      - name: Check canary health
+        run: qai check https://canary.0x402.sh/api/health
