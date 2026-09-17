@@ -336,14 +336,14 @@ function renderHealth(value) {
   if (!valid) {
     setText("health-connection", "schema mismatch");
     setText("health-status", "not verified");
-    setText("health-service", "unverified");
+    setText("health-monitoring", "unverified");
     setText("health-outbound", "unknown");
     setState("health-card", "unverified");
     return false;
   }
 
-  setText("health-service", value.service);
   setText("health-status", value.status);
+  setText("health-monitoring", "disabled");
   setText("health-outbound", value.requestOutboundReadsMade);
   setText("health-connection", "verified");
   setState("health-card", "verified");
@@ -353,7 +353,7 @@ function renderHealth(value) {
 function renderHealthFailure() {
   setText("health-connection", "unavailable");
   setText("health-status", "not verified");
-  setText("health-service", "unavailable");
+  setText("health-monitoring", "unknown");
   setText("health-outbound", "unknown");
   setState("health-card", "unverified");
 }
@@ -587,7 +587,7 @@ function finishStatus(healthVerified, evidenceVerified) {
     setText("live-chip-label", "live / read only");
     setText(
       "status-note",
-      "Both same-origin routes returned the exact expected live read-only configuration and no-action execution contract.",
+      "Both same-origin routes returned the exact expected live read-only configuration. Scheduled endpoint monitoring is disabled by design; this deployment is an on-demand verifier, not a probe scheduler.",
     );
     return;
   }

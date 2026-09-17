@@ -50,6 +50,7 @@ test("Vercel applies a strict no-inline security policy without routing rewrites
     "api/base-transaction.ts": { maxDuration: 10 },
     "api/x402-intent.ts": { maxDuration: 10 },
   });
+  assert.equal("crons" in configuration, false);
   assert.equal(configuration.rewrites, undefined);
   assert.equal(configuration.headers?.length, 1);
   assert.equal(configuration.headers?.[0]?.source, "/(.*)");
@@ -79,6 +80,9 @@ test("the public console uses one strict two-input case form and only safe DOM/n
   assert.equal((html.match(/<form\b/gi) ?? []).length, 1);
   assert.equal((html.match(/<input\b/gi) ?? []).length, 1);
   assert.equal((html.match(/<textarea\b/gi) ?? []).length, 1);
+  assert.match(html, /<dt>Scheduled monitoring<\/dt>/);
+  assert.match(html, /id="health-monitoring"/);
+  assert.doesNotMatch(html, /id="health-service"/);
   assert.match(html, /<form[^>]+id="verify-form"[^>]*novalidate/i);
   assert.match(
     html,
@@ -105,6 +109,8 @@ test("the public console uses one strict two-input case form and only safe DOM/n
     /innerHTML|insertAdjacentHTML|document\.write|eval\s*\(|new Function|WebSocket|EventSource|sendBeacon|XMLHttpRequest/,
   );
   assert.match(script, /\/api\/health/);
+  assert.match(script, /value\.scheduledMonitoringEnabled === false/);
+  assert.match(script, /setText\("health-monitoring", "disabled"\)/);
   assert.match(script, /\/api\/evidence-status/);
   assert.match(script, /const X402_INTENT_ROUTE = "\/api\/x402-intent"/);
   assert.match(
