@@ -24,6 +24,18 @@ This branch is in live read-only verification, source-containment, and no-spend 
 
 The Vercel console and its legacy routes are a separate surface from any historical Bankr listing. A healthy console or HTTP 410 from Vercel does not prove that Bankr has paused or removed a separately hosted service.
 
+## Scheduled monitoring
+
+[canary.0x402.sh](https://canary.0x402.sh) is a live on-demand settlement-terms verifier. It is not an active endpoint probe:
+
+- `GET /api/health` reports `scheduledMonitoringEnabled: false` and `requestOutboundReadsMade: 0`.
+- `src/endpoints.ts` is an empty target registry by containment policy.
+- `src/canary.ts` `checkEndpoint` throws `PUBLIC_PROBE_DISABLED` and is not on any public start path.
+- `vercel.json` has no cron jobs and no probe function.
+- Public `/api/trust`, `/api/preflight`, and paid-service routes return HTTP 410.
+
+Availability of this verifier belongs to an external check of `/api/health`, not an in-process scheduler. Restoring scheduled probes would require an operator-owned fixture list, an approved bounded outbound policy, and explicit authorization. Unknown third-party targets, including cannastack endpoints, must not be added without that review.
+
 ## What is implemented
 
 The public verifier is a deliberately smaller claim than the private evidence kernel. `POST /api/x402-intent` supports exactly:

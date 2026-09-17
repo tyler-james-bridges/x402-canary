@@ -230,6 +230,7 @@ test("the local start path binds loopback and cannot revive outbound probes", as
     const health = await localRequest(address.port, "/api/health", "GET");
     assert.equal(health.status, 200);
     assert.equal(JSON.parse(health.body).requestOutboundReadsMade, 0);
+    assert.equal(JSON.parse(health.body).scheduledMonitoringEnabled, false);
     assert.equal(JSON.parse(health.body).fixedSourceBaseVerification.enabled, true);
 
     const evidenceStatus = await localRequest(
@@ -387,7 +388,12 @@ test("public artifacts do not advertise the disabled product", () => {
   const localEntry = readFileSync(new URL("../index.ts", import.meta.url), "utf8");
   const localDashboard = readFileSync(new URL("../dashboard.ts", import.meta.url), "utf8");
   const scheduledTargets = readFileSync(new URL("../endpoints.ts", import.meta.url), "utf8");
+  const vercel = JSON.parse(
+    readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
+  ) as { crons?: unknown };
   assert.doesNotMatch(localEntry, /setInterval|checkEndpoint|runChecks/);
   assert.doesNotMatch(localDashboard, /checkEndpoint|from ["']\.\/endpoints/);
   assert.match(scheduledTargets, /endpoints:\s*readonly Endpoint\[\]\s*=\s*\[\]/);
+  assert.equal("crons" in vercel, false);
+  assert.match(html, /<dt>Scheduled monitoring<\/dt>/);
 });
